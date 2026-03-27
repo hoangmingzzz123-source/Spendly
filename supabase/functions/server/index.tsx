@@ -1190,7 +1190,7 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 
 // ========== HELPER FUNCTIONS ==========
 
-// Simple base64url decoder
+// Simple base64url decoder with better error handling
 function decodeBase64Url(str: string): string {
   let output = str.replace(/-/g, '+').replace(/_/g, '/');
   switch (output.length % 4) {
@@ -1202,8 +1202,15 @@ function decodeBase64Url(str: string): string {
       break;
   }
   try {
-    return atob(output);
+    const decoded = atob(output);
+    // Properly handle UTF-8
+    const bytes = new Uint8Array(decoded.length);
+    for (let i = 0; i < decoded.length; i++) {
+      bytes[i] = decoded.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
   } catch (e) {
+    console.error('[BASE64] Decode error for string of length', str.length, ':', e);
     throw new Error(`Base64 decode failed: ${e}`);
   }
 }
@@ -1231,19 +1238,26 @@ async function getUserId(c: any): Promise<string | null> {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
-        console.log('[AUTH DEBUG] Invalid JWT format');
+        console.log('[AUTH DEBUG] Invalid JWT format: expected 3 parts, got', parts.length);
         return null;
       }
 
       // Decode payload using simple base64url decoder
+      console.log('[AUTH DEBUG] Attempting to decode JWT part 1 (payload)');
       const payloadStr = decodeBase64Url(parts[1]);
       const payload = JSON.parse(payloadStr);
 
-      console.log(`[AUTH DEBUG] Decoded JWT payload - role: ${payload.role}, sub: ${payload.sub}`);
+      console.log(`[AUTH DEBUG] ✅ Decoded JWT - role: ${payload.role}, sub: ${payload.sub}, exp: ${payload.exp}`);
+      
+      // Check expiration
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        console.log('[AUTH DEBUG] JWT expired');
+        return null;
+      }
       
       const userId = payload.sub;
       if (userId) {
-        console.log(`[AUTH DEBUG] ✅ User from JWT: ${userId}`);
+        console.log(`[AUTH DEBUG] ✅ Successfully extracted user ID: ${userId}`);
         return userId;
       }
 
@@ -1251,36 +1265,8 @@ async function getUserId(c: any): Promise<string | null> {
       return null;
     } catch (decodeError) {
       console.log(`[AUTH DEBUG] JWT decode error: ${decodeError}`);
-      
-      // Last resort: try fetching user from Supabase auth API
-      console.log('[AUTH DEBUG] Attempting Supabase auth API verification...');
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-      
-      if (!supabaseUrl || !anonKey) {
-        console.log('[AUTH DEBUG] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
-        return null;
-      }
-
-      const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        method: 'GET',
-        headers: {
-          'Authorization': authHeader,
-          'apikey': anonKey,
-        },
-      });
-
-      console.log(`[AUTH DEBUG] Supabase auth API response: ${authResponse.status}`);
-
-      if (!authResponse.ok) {
-        const errorText = await authResponse.text();
-        console.log(`[AUTH DEBUG] Auth API error: ${errorText}`);
-        return null;
-      }
-
-      const userData = await authResponse.json();
-      console.log(`[AUTH DEBUG] ✅ User from Supabase: ${userData.id}`);
-      return userData.id || null;
+      console.log('[AUTH DEBUG] Will skip Supabase auth API fallback - using JWT decode result only');
+      return null;
     }
   } catch (error) {
     console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
