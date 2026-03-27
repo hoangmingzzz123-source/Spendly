@@ -17,6 +17,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
       data: { session }
     } = await supabase.auth.getSession();
     sessionToken = session?.access_token ?? null;
+    console.log('[API] Supabase session token:', sessionToken ? `${sessionToken.slice(0, 20)}...` : 'null');
   } catch (error) {
     console.warn('[API] Failed to read Supabase session:', error);
   }
@@ -24,8 +25,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   try {
     if (typeof window !== 'undefined') {
       const localToken = localStorage.getItem('access_token');
+      console.log('[API] LocalStorage token:', localToken ? `${localToken.slice(0, 20)}...` : 'null');
       token = sessionToken || localToken;
-      console.log('[API] Retrieved token from session/localStorage:', token);
+      console.log('[API] Final token chosen:', token ? `${token.slice(0, 20)}...` : 'null');
     }
   } catch (error) {
     console.error('[API] Failed to access localStorage:', error);
@@ -50,11 +52,11 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   } else if (token) {
     // For protected endpoints, use access token
     headers['Authorization'] = `Bearer ${token}`;
-    console.log('[API] ✅ Using access_token');
+    console.log('[API] ✅ Using user access_token');
   } else {
     // If no token, use publicAnonKey
     headers['Authorization'] = `Bearer ${publicAnonKey}`;
-    console.log('[API] 🔑 Using publicAnonKey (no token)');
+    console.log('[API] ⚠️  No user token found, falling back to publicAnonKey');
   }
   // apikey header is always included above
   
