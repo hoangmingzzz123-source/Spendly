@@ -1224,44 +1224,48 @@ async function getUserId(c: any): Promise<string | null> {
       return authUser.id;
     }
 
-    // Method 2: Read from query parameter (multiple ways to try)
+    // Method 2: Extract token from URL (simpler, more reliable)
     let token: string | null = null;
     let source = '';
-
-    // Try Hono's query method
-    try {
-      token = c.req.query('token');
-      if (token) source = 'query()';
-    } catch (e) {
-      console.log(`[AUTH] query() failed:`, e);
-    }
-
-    // Try accessing URL directly
-    if (!token) {
-      try {
-        const url = new URL(c.req.url);
-        token = url.searchParams.get('token');
-        if (token) source = 'searchParams';
-      } catch (e) {
-        console.log(`[AUTH] searchParams failed:`, e);
+    
+    // Get the full URL as string
+    const urlString = c.req.url || '';
+    console.log(`[AUTH] URL: ${urlString.slice(0, 100)}...`);
+    
+    // Parse query string manually (most reliable)
+    const questionIndex = urlString.indexOf('?');
+    if (questionIndex !== -1) {
+      const queryString = urlString.substring(questionIndex + 1);
+      console.log(`[AUTH] Query string length: ${queryString.length}`);
+      
+      // Find token parameter
+      const rows = queryString.split('&');
+      for (const row of rows) {
+        const [key, ...valueParts] = row.split('=');
+        if (key === 'token' && valueParts.length > 0) {
+          token = valueParts.join('='); // Handle = signs in value
+          source = 'URL query string parse';
+          console.log(`[AUTH] ✅ Found token parameter: ${token.length} chars`);
+          break;
+        }
       }
     }
 
-    // Try raw path parsing
+    // Fallback: try Hono's query method
     if (!token) {
       try {
-        const urlStr = c.req.raw?.url || c.req.url || '';
-        const match = urlStr.match(/[?&]token=([^&]*)/);
-        if (match && match[1]) {
-          token = decodeURIComponent(match[1]);
-          source = 'regex parse';
+        const honoToken = c.req.query('token');
+        if (honoToken) {
+          token = honoToken;
+          source = 'c.req.query()';
+          console.log(`[AUTH] Found via c.req.query()`);
         }
       } catch (e) {
-        console.log(`[AUTH] regex parse failed:`, e);
+        console.log(`[AUTH] c.req.query() error:`, e);
       }
     }
 
-    // Fallback: try headers
+    // Last resort: check headers
     if (!token) {
       const authHeader = c.req.header('Authorization') || c.req.header('authorization') || '';
       if (authHeader.startsWith('Bearer ')) {
@@ -1271,11 +1275,11 @@ async function getUserId(c: any): Promise<string | null> {
     }
 
     if (!token) {
-      console.log(`[AUTH] ❌ No token found in query params or headers`);
+      console.log(`[AUTH] ❌ Missing authorization header`);
       return null;
     }
 
-    console.log(`[AUTH] ✅ Token from ${source} (${token.length} chars)`);
+    console.log(`[AUTH] Token source: ${source}`);
     
     try {
       const parts = token.split('.');
@@ -1287,12 +1291,12 @@ async function getUserId(c: any): Promise<string | null> {
       const payloadStr = decodeBase64Url(parts[1]);
       const payload = JSON.parse(payloadStr);
 
-      console.log(`[AUTH] ✅ JWT decoded: role=${payload.role}`);
+      console.log(`[AUTH] ✅ JWT decoded: role=${payload.role}, sub=${payload.sub?.slice(0, 8)}`);
       
       // Check expiration
       const now = Math.floor(Date.now() / 1000);
       if (payload.exp && payload.exp < now) {
-        console.log(`[AUTH] ❌ Token expired`);
+        console.log(`[AUTH] ❌ Token expired: ${payload.exp} < ${now}`);
         return null;
       }
       
@@ -1302,14 +1306,14 @@ async function getUserId(c: any): Promise<string | null> {
         return null;
       }
 
-      console.log(`[AUTH] ✅ Authenticated: ${userId.slice(0, 8)}...`);
+      console.log(`[AUTH] ✅ Authenticated user: ${userId.slice(0, 8)}`);
       return userId;
     } catch (decodeError) {
-      console.log(`[AUTH] ❌ Decode error: ${decodeError}`);
+      console.log(`[AUTH] ❌ JWT decode error: ${decodeError}`);
       return null;
     }
   } catch (error) {
-    console.log(`[AUTH] ❌ Error: ${error}`);
+    console.log(`[AUTH] ❌ Unexpected error: ${error}`);
     return null;
   }
 }
