@@ -1189,13 +1189,38 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 // ========== HELPER FUNCTIONS ==========
 async function getUserId(c: any): Promise<string | null> {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    if (!accessToken) return null;
+    const authHeader = c.req.header('Authorization');
+    console.log(`[AUTH DEBUG] Authorization header present: ${!!authHeader}`);
+    
+    if (!authHeader) {
+      console.log(`[AUTH DEBUG] No Authorization header`);
+      return null;
+    }
+    
+    const accessToken = authHeader.split(' ')[1];
+    if (!accessToken) {
+      console.log(`[AUTH DEBUG] No token in Authorization header`);
+      return null;
+    }
+    
+    console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
+    
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-    if (error || !user) return null;
+    
+    if (error) {
+      console.log(`[AUTH DEBUG] getUser error: ${error.message}`);
+      return null;
+    }
+    
+    if (!user) {
+      console.log(`[AUTH DEBUG] No user found for token`);
+      return null;
+    }
+    
+    console.log(`[AUTH DEBUG] User authenticated: ${user.id}`);
     return user.id;
   } catch (error) {
-    console.log(`Get user ID error: ${error}`);
+    console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
     return null;
   }
 }
