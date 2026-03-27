@@ -15,6 +15,11 @@ app.use('*', cors({
 }));
 app.use('*', logger(console.log));
 
+// Handle CORS preflight without authentication
+app.options('*', (c) => {
+  return c.text('', 204);
+});
+
 // Supabase client
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
