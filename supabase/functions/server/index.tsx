@@ -1224,27 +1224,54 @@ async function getUserId(c: any): Promise<string | null> {
       return authUser.id;
     }
 
-    // Method 2: Read from query parameter (Supabase won't strip this)
-    let token: string | null = c.req.query('token') || null;
-    let source = 'query param';
-    
-    // Fallback: try headers if query param not found
+    // Method 2: Read from query parameter (multiple ways to try)
+    let token: string | null = null;
+    let source = '';
+
+    // Try Hono's query method
+    try {
+      token = c.req.query('token');
+      if (token) source = 'query()';
+    } catch (e) {
+      console.log(`[AUTH] query() failed:`, e);
+    }
+
+    // Try accessing URL directly
+    if (!token) {
+      try {
+        const url = new URL(c.req.url);
+        token = url.searchParams.get('token');
+        if (token) source = 'searchParams';
+      } catch (e) {
+        console.log(`[AUTH] searchParams failed:`, e);
+      }
+    }
+
+    // Try raw path parsing
+    if (!token) {
+      try {
+        const urlStr = c.req.raw?.url || c.req.url || '';
+        const match = urlStr.match(/[?&]token=([^&]*)/);
+        if (match && match[1]) {
+          token = decodeURIComponent(match[1]);
+          source = 'regex parse';
+        }
+      } catch (e) {
+        console.log(`[AUTH] regex parse failed:`, e);
+      }
+    }
+
+    // Fallback: try headers
     if (!token) {
       const authHeader = c.req.header('Authorization') || c.req.header('authorization') || '';
       if (authHeader.startsWith('Bearer ')) {
         token = authHeader.replace('Bearer ', '').trim();
-        source = 'header';
+        source = 'Authorization header';
       }
     }
 
-    // Last resort: try x-access-token header
     if (!token) {
-      token = c.req.header('x-access-token') || null;
-      if (token) source = 'x-access-token header';
-    }
-
-    if (!token) {
-      console.log(`[AUTH] ❌ No token found`);
+      console.log(`[AUTH] ❌ No token found in query params or headers`);
       return null;
     }
 
@@ -1260,12 +1287,12 @@ async function getUserId(c: any): Promise<string | null> {
       const payloadStr = decodeBase64Url(parts[1]);
       const payload = JSON.parse(payloadStr);
 
-      console.log(`[AUTH] ✅ JWT: role=${payload.role}, exp=${payload.exp}`);
+      console.log(`[AUTH] ✅ JWT decoded: role=${payload.role}`);
       
       // Check expiration
       const now = Math.floor(Date.now() / 1000);
       if (payload.exp && payload.exp < now) {
-        console.log(`[AUTH] ❌ Expired token`);
+        console.log(`[AUTH] ❌ Token expired`);
         return null;
       }
       
@@ -1278,7 +1305,7 @@ async function getUserId(c: any): Promise<string | null> {
       console.log(`[AUTH] ✅ Authenticated: ${userId.slice(0, 8)}...`);
       return userId;
     } catch (decodeError) {
-      console.log(`[AUTH] ❌ JWT decode error: ${decodeError}`);
+      console.log(`[AUTH] ❌ Decode error: ${decodeError}`);
       return null;
     }
   } catch (error) {
