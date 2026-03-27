@@ -1226,14 +1226,37 @@ async function getUserId(c: any): Promise<string | null> {
     }
 
     // Fallback: Extract JWT from Authorization header and decode payload
-    const authHeader = c.req.header('Authorization');
+    console.log('[AUTH DEBUG] === HEADER DIAGNOSIS ===');
+    
+    // Try multiple ways to access headers
+    let authHeader = c.req.header('Authorization');
+    console.log('[AUTH DEBUG] Method 1 (Authorization):', authHeader ? 'Found, length: ' + authHeader.length : 'Not found');
+    
+    if (!authHeader) {
+      authHeader = c.req.header('authorization');
+      console.log('[AUTH DEBUG] Method 2 (authorization lowercase):', authHeader ? 'Found, length: ' + authHeader.length : 'Not found');
+    }
+    
+    if (!authHeader) {
+      // Try accessing raw headers
+      try {
+        const headers = c.req.raw?.headers;
+        if (headers) {
+          authHeader = headers.get?.('Authorization') || headers.get?.('authorization');
+          console.log('[AUTH DEBUG] Method 3 (raw headers):', authHeader ? 'Found, length: ' + authHeader.length : 'Not found');
+        }
+      } catch (e) {
+        console.log('[AUTH DEBUG] Method 3 failed:', e);
+      }
+    }
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`[AUTH DEBUG] No valid Authorization header`);
+      console.log(`[AUTH DEBUG] ❌ No valid Authorization header. Received: "${authHeader?.slice(0, 50)}..."`);
       return null;
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
-    console.log(`[AUTH DEBUG] Extracted JWT token, length: ${token.length}`);
+    console.log(`[AUTH DEBUG] ✅ Extracted JWT token, length: ${token.length}`);
     
     try {
       const parts = token.split('.');
@@ -1265,7 +1288,6 @@ async function getUserId(c: any): Promise<string | null> {
       return null;
     } catch (decodeError) {
       console.log(`[AUTH DEBUG] JWT decode error: ${decodeError}`);
-      console.log('[AUTH DEBUG] Will skip Supabase auth API fallback - using JWT decode result only');
       return null;
     }
   } catch (error) {
