@@ -1190,35 +1190,6 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 
 // ========== HELPER FUNCTIONS ==========
 
-// Base64 URL decode function compatible with Deno
-function base64UrlDecode(str: string): string {
-  let output = str.replace(/-/g, '+').replace(/_/g, '/');
-  switch (output.length % 4) {
-    case 0:
-      break;
-    case 2:
-      output += '==';
-      break;
-    case 3:
-      output += '=';
-      break;
-    default:
-      throw new Error('Invalid base64url string');
-  }
-
-  // Use TextDecoder to handle UTF-8 properly in Deno
-  try {
-    const binaryString = atob(output);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new TextDecoder().decode(bytes);
-  } catch (e) {
-    throw new Error(`Base64 decode failed: ${e}`);
-  }
-}
-
 async function getUserId(c: any): Promise<string | null> {
   try {
     // Get the authenticated user from Supabase context
@@ -1229,7 +1200,7 @@ async function getUserId(c: any): Promise<string | null> {
       return authUser.id;
     }
 
-    // Fallback: Extract and decode JWT from Authorization header
+    // Fallback: Extract and verify JWT with Supabase auth API
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log(`[AUTH DEBUG] No valid Authorization header`);
@@ -1237,34 +1208,38 @@ async function getUserId(c: any): Promise<string | null> {
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
-    console.log(`[AUTH DEBUG] Token length: ${token.length}`);
+    console.log(`[AUTH DEBUG] Token received, length: ${token.length}`);
     
-    // Decode JWT without verification (edge function receives already-validated token from Supabase)
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        console.log('[AUTH DEBUG] Invalid JWT format: wrong part count');
-        return null;
-      }
-
-      // Decode payload (part 1) using base64url
-      const payloadStr = base64UrlDecode(parts[1]);
-      const payload = JSON.parse(payloadStr);
-
-      console.log(`[AUTH DEBUG] Decoded payload:`, payload);
-      
-      const userId = payload.sub;
-      if (userId) {
-        console.log(`[AUTH DEBUG] User from JWT decode: ${userId}`);
-        return userId;
-      }
-
-      console.log('[AUTH DEBUG] No subject in JWT payload');
-      return null;
-    } catch (decodeError) {
-      console.log(`[AUTH DEBUG] JWT decode failed: ${decodeError}`);
+    // Use Supabase client to verify the token
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    if (!supabaseUrl || !anonKey) {
+      console.log('[AUTH DEBUG] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
       return null;
     }
+
+    // Call Supabase auth endpoint to get user from token
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'apikey': anonKey,
+      },
+    });
+
+    console.log(`[AUTH DEBUG] Supabase auth response status: ${authResponse.status}`);
+
+    if (!authResponse.ok) {
+      const errorData = await authResponse.text();
+      console.log(`[AUTH DEBUG] Auth verification failed: ${authResponse.status} - ${errorData}`);
+      return null;
+    }
+
+    const userData = await authResponse.json();
+    console.log(`[AUTH DEBUG] User verified from Supabase: ${userData.id}`);
+    return userData.id || null;
+    
   } catch (error) {
     console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
     return null;
