@@ -45,6 +45,10 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     // For protected endpoints, use access token
     headers['Authorization'] = `Bearer ${token}`;
     console.log('[API] ✅ Using access_token');
+  } else {
+    // If no token, use publicAnonKey
+    headers['Authorization'] = `Bearer ${publicAnonKey}`;
+    console.log('[API] 🔑 Using publicAnonKey (no token)');
   }
   // apikey header is always included above
   
