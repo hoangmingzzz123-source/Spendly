@@ -45,21 +45,21 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     ...options.headers as Record<string, string>,
   };
   
-  // For auth endpoints, send anon key as Supabase functions may require it
   if (isAuthEndpoint) {
+    // Auth endpoints: use Bearer token
     headers['Authorization'] = `Bearer ${token || publicAnonKey}`;
-    console.log('[API] 🔑 Using publicAnonKey for auth endpoint');
+    console.log('[API] 🔑 Auth endpoint: using Authorization header');
   } else if (token) {
-    // For protected endpoints, use access token in custom header
-    // (Supabase edge runtime strips Authorization header, so use x-access-token instead)
+    // Protected endpoints: send token in BOTH headers
+    // (Authorization may be stripped by Supabase edge runtime, so x-access-token is backup)
+    headers['Authorization'] = `Bearer ${token}`;
     headers['x-access-token'] = token;
-    console.log('[API] ✅ Using user access_token in x-access-token header');
+    console.log('[API] ✅ Protected endpoint: token in Authorization + x-access-token');
   } else {
-    // If no token, use publicAnonKey
+    // No user token: use publicAnonKey in Authorization
     headers['Authorization'] = `Bearer ${publicAnonKey}`;
-    console.log('[API] ⚠️  No user token found, falling back to publicAnonKey');
+    console.log('[API] ⚠️  No user token: using publicAnonKey');
   }
-  // apikey header is always included above
   
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,

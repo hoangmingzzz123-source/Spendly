@@ -1217,80 +1217,66 @@ function decodeBase64Url(str: string): string {
 
 async function getUserId(c: any): Promise<string | null> {
   try {
-    console.log('[AUTH DEBUG] === getUserId called ===');
-    
     // Method 1: Check context
     const authUser = c.get('user');
     if (authUser?.id) {
-      console.log(`[AUTH DEBUG] ✅ User from context: ${authUser.id}`);
+      console.log(`[AUTH] ✅ User from context: ${authUser.id}`);
       return authUser.id;
     }
 
-    // Method 2: Read from custom header (Supabase strips Authorization header)
-    console.log('[AUTH DEBUG] Reading from x-access-token header...');
-    let token: string | null = null;
+    // Method 2: Read from custom header
+    let token: string | null = c.req.header('x-access-token') || null;
+    let source = 'x-access-token';
     
-    try {
-      token = c.req.header('x-access-token');
-      console.log('[AUTH DEBUG] x-access-token:', token ? `Found (${token.length} chars)` : 'Not found');
-    } catch (e) {
-      console.log('[AUTH DEBUG] x-access-token read error:', e);
-    }
-
-    // Fallback: try Authorization header (in case client sends it)
+    // Fallback: try Authorization header
     if (!token) {
-      try {
-        const authHeader = c.req.header('Authorization') || c.req.header('authorization');
-        if (authHeader?.startsWith('Bearer ')) {
-          token = authHeader.replace('Bearer ', '').trim();
-          console.log('[AUTH DEBUG] Fallback: Authorization header found');
-        }
-      } catch (e) {
-        console.log('[AUTH DEBUG] Authorization header fallback error:', e);
+      const authHeader = c.req.header('Authorization') || c.req.header('authorization') || '';
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.replace('Bearer ', '').trim();
+        source = 'Authorization';
       }
     }
 
     if (!token) {
-      console.log('[AUTH DEBUG] ❌ No token found in headers');
+      console.log(`[AUTH] ❌ Missing authorization header (no x-access-token or Authorization found)`);
       return null;
     }
 
-    console.log(`[AUTH DEBUG] ✅ Found token, length: ${token.length}`);
+    console.log(`[AUTH] ✅ Found token from ${source} (${token.length} chars)`);
     
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
-        console.log('[AUTH DEBUG] ❌ Invalid JWT: expected 3 parts, got', parts.length);
+        console.log(`[AUTH] ❌ Invalid JWT format: ${parts.length} parts instead of 3`);
         return null;
       }
 
-      console.log('[AUTH DEBUG] Decoding JWT payload...');
       const payloadStr = decodeBase64Url(parts[1]);
       const payload = JSON.parse(payloadStr);
 
-      console.log(`[AUTH DEBUG] ✅ Decoded JWT - role: ${payload.role}, sub: ${payload.sub}`);
+      console.log(`[AUTH] ✅ JWT decoded - role: ${payload.role}, sub: ${payload.sub?.slice(0, 8)}...`);
       
       // Check expiration
       const now = Math.floor(Date.now() / 1000);
       if (payload.exp && payload.exp < now) {
-        console.log(`[AUTH DEBUG] ❌ JWT expired: ${payload.exp} < ${now}`);
+        console.log(`[AUTH] ❌ JWT expired (${payload.exp} < ${now})`);
         return null;
       }
       
       const userId = payload.sub;
-      if (userId) {
-        console.log(`[AUTH DEBUG] ✅ Successfully extracted user ID: ${userId}`);
-        return userId;
+      if (!userId) {
+        console.log(`[AUTH] ❌ No subject in JWT payload`);
+        return null;
       }
 
-      console.log('[AUTH DEBUG] ❌ No subject in JWT payload');
-      return null;
+      console.log(`[AUTH] ✅ Successfully authenticated user: ${userId.slice(0, 8)}...`);
+      return userId;
     } catch (decodeError) {
-      console.log(`[AUTH DEBUG] ❌ JWT decode/parse error: ${decodeError}`);
+      console.log(`[AUTH] ❌ JWT decode failed: ${decodeError}`);
       return null;
     }
   } catch (error) {
-    console.log(`[AUTH DEBUG] ❌ Exception in getUserId: ${error}`);
+    console.log(`[AUTH] ❌ Unexpected error: ${error}`);
     return null;
   }
 }
