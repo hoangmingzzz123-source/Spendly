@@ -10,12 +10,13 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
 export function Timeline() {
-  const { currentMonth } = useStore();
+  const { currentMonth, user, accessToken } = useStore();
   const [period, setPeriod] = useState('month');
 
   const { data, isLoading } = useQuery({
     queryKey: ['timeline', period, currentMonth],
     queryFn: () => timelineApi.get(period, currentMonth),
+    enabled: !!accessToken,
   });
 
   const formatCurrency = (amount: number) => {

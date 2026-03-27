@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { accountsApi } from '../../lib/api';
+import { useStore } from '../../lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -54,21 +55,25 @@ const COLORS = [
 
 export function Accounts() {
   const queryClient = useQueryClient();
+  const { user, accessToken } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [bankSearch, setBankSearch] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: 'CASH',
-    balance: '0',
+    balance: '',
+    currency: 'VND',
     color: '#3B82F6',
+    bankName: '',
     bankCode: '',
   });
 
   const { data, isLoading } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => accountsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const createMutation = useMutation({
@@ -104,8 +109,7 @@ export function Accounts() {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingAccount(null);
-    setFormData({ name: '', type: 'CASH', balance: '0', color: '#3B82F6', bankCode: '' });
-    setBankSearch('');
+    setFormData({ name: '', type: 'CASH', balance: '', currency: 'VND', color: '#3B82F6', bankName: '', bankCode: '' });
   };
 
   const openEdit = (account: any) => {
@@ -114,7 +118,9 @@ export function Accounts() {
       name: account.name,
       type: account.type,
       balance: String(account.balance || 0),
+      currency: account.currency || 'VND',
       color: account.color || '#3B82F6',
+      bankName: account.bankName || '',
       bankCode: account.bankCode || '',
     });
     setDialogOpen(true);

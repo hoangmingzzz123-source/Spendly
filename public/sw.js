@@ -1,5 +1,5 @@
 // Service Worker for PWA
-const CACHE_NAME = 'spendly-v1.0.0';
+const CACHE_NAME = 'spendly-v1.0.1'; // Bumped version to force SW update
 const urlsToCache = [
   '/',
   '/index.html',
@@ -86,30 +86,44 @@ self.addEventListener('fetch', (event) => {
 // Background sync for offline transactions
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-transactions') {
-    event.waitUntil(syncTransactions());
+    // Note: Service Workers cannot access localStorage directly
+    // Sync functionality disabled until we implement proper token passing
+    console.log('Service Worker: Background sync disabled - requires authentication token');
+    // event.waitUntil(syncTransactions());
   }
 });
 
 async function syncTransactions() {
-  // Get pending transactions from IndexedDB
-  const db = await openDB();
-  const transactions = await db.getAll('pending-transactions');
+  // Disabled - Service Workers cannot access localStorage
+  // This would require passing the token through the sync event
+  console.log('Service Worker: syncTransactions disabled');
+  return;
+  
+  /* Original implementation kept for reference:
+  try {
+    const db = await openDB();
+    const transactions = await db.getAll('pending-transactions');
 
-  for (const transaction of transactions) {
-    try {
-      // Send to server
-      await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transaction),
-      });
+    for (const transaction of transactions) {
+      try {
+        await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            // Token would need to be passed here
+          },
+          body: JSON.stringify(transaction),
+        });
 
-      // Remove from pending
-      await db.delete('pending-transactions', transaction.id);
-    } catch (error) {
-      console.error('Sync failed for transaction', transaction.id);
+        await db.delete('pending-transactions', transaction.id);
+      } catch (error) {
+        console.error('Sync failed for transaction', transaction.id);
+      }
     }
+  } catch (error) {
+    console.error('Service Worker: Sync transactions failed', error);
   }
+  */
 }
 
 // Push notifications

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Camera, Upload, Scan, Loader2, Check, X, AlertCircle, Receipt, Zap } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { transactionsApi, accountsApi, categoriesApi, ocrApi } from '../../lib/api';
+import { useStore } from '../../lib/store';
 
 interface OCRResult {
   amount?: number;
@@ -21,28 +22,31 @@ interface OCRResult {
 
 export function OCRScanner() {
   const queryClient = useQueryClient();
+  const { accessToken } = useStore();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [editableResult, setEditableResult] = useState({
+  const [error, setError] = useState<string | null>(null);
+  const [transactionData, setTransactionData] = useState({
     amount: '',
-    date: '',
-    merchantName: '',
     categoryId: '',
     accountId: '',
+    date: new Date().toISOString().split('T')[0],
+    note: '',
   });
 
   // Fetch accounts and categories for selection
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => accountsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const accounts = accountsData?.data || [];
@@ -84,18 +88,17 @@ export function OCRScanner() {
         c.name.toLowerCase().includes((result.category || '').toLowerCase())
       );
 
-      setEditableResult({
+      setTransactionData({
         amount: String(result.amount || ''),
         date: result.date || new Date().toISOString().split('T')[0],
-        merchantName: result.merchantName || '',
+        note: `Quét hóa đơn: ${result.merchantName || 'Unknown'}`,
         categoryId: matchedCategory?.id || (categories[0]?.id || ''),
         accountId: accounts[0]?.id || '',
       });
 
-      setShowConfirm(true);
-      toast.success('Quét hóa đơn thành công!');
+      setError(null);
     } catch (error: any) {
-      toast.error(error.message || 'Lỗi quét hóa đơn');
+      setError(error.message || 'Lỗi quét hóa đơn');
       console.error('OCR error:', error);
     } finally {
       setIsScanning(false);
@@ -129,29 +132,27 @@ export function OCRScanner() {
   });
 
   const handleConfirm = () => {
-    if (!editableResult.categoryId || !editableResult.accountId) {
+    if (!transactionData.categoryId || !transactionData.accountId) {
       toast.error('Vui lòng chọn danh mục và tài khoản');
       return;
     }
 
     createTransaction.mutate({
-      amount: parseFloat(editableResult.amount) || 0,
+      amount: parseFloat(transactionData.amount) || 0,
       type: 'EXPENSE',
-      categoryId: editableResult.categoryId,
-      accountId: editableResult.accountId,
-      date: editableResult.date || new Date().toISOString().split('T')[0],
-      note: `Quét hóa đơn: ${editableResult.merchantName || 'Unknown'}`,
+      categoryId: transactionData.categoryId,
+      accountId: transactionData.accountId,
+      date: transactionData.date || new Date().toISOString().split('T')[0],
+      note: transactionData.note,
     });
-
-    setShowConfirm(false);
   };
 
   const reset = () => {
     setSelectedFile(null);
     setPreview(null);
     setOcrResult(null);
-    setShowConfirm(false);
-    setEditableResult({ amount: '', date: '', merchantName: '', categoryId: '', accountId: '' });
+    setError(null);
+    setTransactionData({ amount: '', categoryId: '', accountId: '', date: new Date().toISOString().split('T')[0], note: '' });
   };
 
   const formatCurrency = (n: number) =>
@@ -267,7 +268,7 @@ export function OCRScanner() {
       </div>
 
       {/* Confirm Dialog */}
-      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+      <Dialog open={!!ocrResult} onOpenChange={setOcrResult}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Xác nhận & chỉnh sửa</DialogTitle>
@@ -296,8 +297,8 @@ export function OCRScanner() {
                   <Label className="text-xs">Số tiền (VNĐ)</Label>
                   <Input
                     type="number"
-                    value={editableResult.amount}
-                    onChange={(e) => setEditableResult({ ...editableResult, amount: e.target.value })}
+                    value={transactionData.amount}
+                    onChange={(e) => setTransactionData({ ...transactionData, amount: e.target.value })}
                   />
                 </div>
 
@@ -305,24 +306,24 @@ export function OCRScanner() {
                   <Label className="text-xs">Ngày</Label>
                   <Input
                     type="date"
-                    value={editableResult.date}
-                    onChange={(e) => setEditableResult({ ...editableResult, date: e.target.value })}
+                    value={transactionData.date}
+                    onChange={(e) => setTransactionData({ ...transactionData, date: e.target.value })}
                   />
                 </div>
 
                 <div>
                   <Label className="text-xs">Cửa hàng</Label>
                   <Input
-                    value={editableResult.merchantName}
-                    onChange={(e) => setEditableResult({ ...editableResult, merchantName: e.target.value })}
+                    value={transactionData.note}
+                    onChange={(e) => setTransactionData({ ...transactionData, note: e.target.value })}
                   />
                 </div>
 
                 <div>
                   <Label className="text-xs">Danh mục *</Label>
                   <Select
-                    value={editableResult.categoryId}
-                    onValueChange={(v) => setEditableResult({ ...editableResult, categoryId: v })}
+                    value={transactionData.categoryId}
+                    onValueChange={(v) => setTransactionData({ ...transactionData, categoryId: v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn danh mục" />
@@ -338,8 +339,8 @@ export function OCRScanner() {
                 <div>
                   <Label className="text-xs">Tài khoản thanh toán *</Label>
                   <Select
-                    value={editableResult.accountId}
-                    onValueChange={(v) => setEditableResult({ ...editableResult, accountId: v })}
+                    value={transactionData.accountId}
+                    onValueChange={(v) => setTransactionData({ ...transactionData, accountId: v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn tài khoản" />
@@ -368,7 +369,7 @@ export function OCRScanner() {
                   )}
                   Lưu giao dịch
                 </Button>
-                <Button variant="outline" onClick={() => setShowConfirm(false)}>
+                <Button variant="outline" onClick={() => setOcrResult(null)}>
                   Hủy
                 </Button>
               </div>

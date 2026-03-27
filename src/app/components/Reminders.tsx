@@ -11,18 +11,19 @@ import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import { Plus, Bell, BellOff, Clock, Calendar, DollarSign, Edit2, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { useStore } from '../../lib/store';
 
 export function Reminders() {
   const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = useState(false);
+  const { user, accessToken } = useStore();
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReminder, setEditingReminder] = useState<any>(null);
-
   const [formData, setFormData] = useState({
     title: '',
-    type: 'DAILY',
-    frequency: 'DAILY',
-    dayOfMonth: '',
-    dayOfWeek: '',
+    type: 'BILL',
+    frequency: 'MONTHLY',
+    dayOfMonth: '1',
+    dayOfWeek: 'monday',
     time: '21:00',
     amount: '',
     categoryId: '',
@@ -33,18 +34,21 @@ export function Reminders() {
   const { data: remindersData, isLoading } = useQuery({
     queryKey: ['reminders'],
     queryFn: () => remindersApi.getAll(),
+    enabled: !!accessToken,
   });
 
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.getAll(),
+    enabled: !!accessToken,
   });
 
   // Fetch accounts
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => accountsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const reminders = remindersData?.data || [];
@@ -57,7 +61,7 @@ export function Reminders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
       toast.success('Nhắc nhở đã được tạo');
-      setIsOpen(false);
+      setDialogOpen(false);
       resetForm();
     },
     onError: () => {
@@ -71,7 +75,7 @@ export function Reminders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
       toast.success('Nhắc nhở đã được cập nhật');
-      setIsOpen(false);
+      setDialogOpen(false);
       setEditingReminder(null);
       resetForm();
     },
@@ -107,10 +111,10 @@ export function Reminders() {
   const resetForm = () => {
     setFormData({
       title: '',
-      type: 'DAILY',
-      frequency: 'DAILY',
-      dayOfMonth: '',
-      dayOfWeek: '',
+      type: 'BILL',
+      frequency: 'MONTHLY',
+      dayOfMonth: '1',
+      dayOfWeek: 'monday',
       time: '21:00',
       amount: '',
       categoryId: '',
@@ -156,7 +160,7 @@ export function Reminders() {
       categoryId: reminder.categoryId || '',
       accountId: reminder.accountId || '',
     });
-    setIsOpen(true);
+    setDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -207,8 +211,8 @@ export function Reminders() {
           <h1 className="text-3xl font-bold">Nhắc nhở</h1>
           <p className="text-muted-foreground">Quản lý nhắc nhở thanh toán và ghi thu chi</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
@@ -376,7 +380,7 @@ export function Reminders() {
             <Bell className="w-12 h-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium mb-2">Chưa có nhắc nhở nào</p>
             <p className="text-sm text-muted-foreground mb-4">Tạo nhắc nhở để không quên các khoản thu chi quan trọng</p>
-            <Button onClick={() => setIsOpen(true)}>
+            <Button onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Tạo nhắc nhở đầu tiên
             </Button>

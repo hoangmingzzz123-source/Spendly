@@ -10,15 +10,24 @@ const app = new Hono();
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'apikey'],
 }));
 app.use('*', logger(console.log));
 
 // Supabase client
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+  {
+    global: {
+      headers: {
+        Authorization: req.headers.get('Authorization')!,
+      },
+    },
+  }
 );
+
+
 
 // ========== AUTH ROUTES ==========
 app.post('/make-server-f5f5b39c/auth/register', async (c) => {
@@ -1189,36 +1198,48 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 // ========== HELPER FUNCTIONS ==========
 async function getUserId(c: any): Promise<string | null> {
   try {
-    const authHeader = c.req.header('Authorization');
-    console.log(`[AUTH DEBUG] Authorization header present: ${!!authHeader}`);
+    // Get the authenticated user from Supabase context
+    // Supabase middleware automatically extracts and validates the JWT
     
+    const authUser = c.get('user');
+    
+    if (authUser?.id) {
+      console.log(`[AUTH DEBUG] User from context: ${authUser.id}`);
+      return authUser.id;
+    }
+
+    // Fallback: Check Authorization header if available
+    const authHeader = c.req.header('Authorization');
     if (!authHeader) {
       console.log(`[AUTH DEBUG] No Authorization header`);
       return null;
     }
+
+    // Extract token and call Supabase REST API
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     
-    const accessToken = authHeader.split(' ')[1];
-    if (!accessToken) {
-      console.log(`[AUTH DEBUG] No token in Authorization header`);
+    if (!supabaseUrl || !anonKey) {
+      console.log('[AUTH DEBUG] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
       return null;
     }
-    
-    console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
-    
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-    
-    if (error) {
-      console.log(`[AUTH DEBUG] getUser error: ${error.message}`);
+
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        'Authorization': authHeader,
+        'apikey': anonKey,
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`[AUTH DEBUG] User verification failed: ${response.status}`);
       return null;
     }
-    
-    if (!user) {
-      console.log(`[AUTH DEBUG] No user found for token`);
-      return null;
-    }
-    
-    console.log(`[AUTH DEBUG] User authenticated: ${user.id}`);
-    return user.id;
+
+    const userData = await response.json();
+    console.log(`[AUTH DEBUG] User from REST API: ${userData.id}`);
+    return userData.id || null;
   } catch (error) {
     console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
     return null;

@@ -9,31 +9,37 @@ import { Label } from './ui/label';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
-import { Plus, Target, PiggyBank, TrendingUp, Calendar, Edit2, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Target, PiggyBank, TrendingUp, Calendar, Edit2, Trash2, DollarSign, Lightbulb, Sparkles } from 'lucide-react';
+import { SAMPLE_GOALS } from '../../lib/sampleData';
+import { Alert, AlertDescription } from './ui/alert';
+import { useStore } from '../../lib/store';
 
 export function Goals() {
   const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = useState(false);
-  const [allocateDialogOpen, setAllocateDialogOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<any>(null);
+  const { user, accessToken } = useStore();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [allocateOpen, setAllocateOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<any>(null);
   const [allocateAmount, setAllocateAmount] = useState('');
-
+  const [editingGoal, setEditingGoal] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     targetAmount: '',
     deadline: '',
-    icon: '🎯',
-    color: '#3B82F6',
+    category: 'savings',
+    description: '',
   });
+  const [loadingSample, setLoadingSample] = useState(false);
 
   // Fetch goals
   const { data: goalsData, isLoading } = useQuery({
     queryKey: ['goals'],
     queryFn: () => goalsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const goals = goalsData?.data || [];
+  const hasGoals = goals.length > 0;
 
   // Create goal mutation
   const createMutation = useMutation({
@@ -41,7 +47,7 @@ export function Goals() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Mục tiêu đã được tạo');
-      setIsOpen(false);
+      setDialogOpen(false);
       resetForm();
     },
     onError: () => {
@@ -55,7 +61,7 @@ export function Goals() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Mục tiêu đã được cập nhật');
-      setIsOpen(false);
+      setDialogOpen(false);
       setEditingGoal(null);
       resetForm();
     },
@@ -70,7 +76,7 @@ export function Goals() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Đã cộng tiền vào mục tiêu');
-      setAllocateDialogOpen(false);
+      setAllocateOpen(false);
       setAllocateAmount('');
       setSelectedGoal(null);
     },
@@ -91,13 +97,36 @@ export function Goals() {
     },
   });
 
+  // Load sample goals
+  const loadSampleGoals = async () => {
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng này');
+      return;
+    }
+    
+    setLoadingSample(true);
+    try {
+      for (const goal of SAMPLE_GOALS) {
+        await goalsApi.create(goal);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      toast.success('Đã tải mục tiêu mẫu thành công! 🎉');
+    } catch (error: any) {
+      console.error('Load sample goals error:', error);
+      toast.error(error.message || 'Không thể tải mục tiêu mẫu');
+    } finally {
+      setLoadingSample(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
       targetAmount: '',
       deadline: '',
-      icon: '🎯',
-      color: '#3B82F6',
+      category: 'savings',
+      description: '',
     });
     setEditingGoal(null);
   };
@@ -126,10 +155,10 @@ export function Goals() {
       name: goal.name,
       targetAmount: goal.targetAmount.toString(),
       deadline: goal.deadline || '',
-      icon: goal.icon || '🎯',
-      color: goal.color || '#3B82F6',
+      category: goal.category || 'savings',
+      description: goal.description || '',
     });
-    setIsOpen(true);
+    setDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -140,7 +169,7 @@ export function Goals() {
 
   const handleAllocate = (goal: any) => {
     setSelectedGoal(goal);
-    setAllocateDialogOpen(true);
+    setAllocateOpen(true);
   };
 
   const handleAllocateSubmit = (e: React.FormEvent) => {
@@ -156,9 +185,6 @@ export function Goals() {
       amount: parseFloat(allocateAmount),
     });
   };
-
-  const iconOptions = ['🎯', '🏠', '🚗', '✈️', '💍', '🎓', '💰', '🏖️', '📱', '🎮'];
-  const colorOptions = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
   const totalTarget = goals.reduce((sum: number, g: any) => sum + g.targetAmount, 0);
   const totalSaved = goals.reduce((sum: number, g: any) => sum + g.currentAmount, 0);
@@ -180,8 +206,8 @@ export function Goals() {
           <h1 className="text-3xl font-bold">Mục tiêu tiết kiệm</h1>
           <p className="text-muted-foreground">Đặt và theo dõi mục tiêu tài chính của bạn</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
@@ -227,33 +253,32 @@ export function Goals() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Icon</Label>
+                <Label>Loại mục tiêu</Label>
                 <div className="flex gap-2 flex-wrap">
-                  {iconOptions.map((icon) => (
-                    <button
-                      key={icon}
-                      type="button"
-                      className={`w-10 h-10 text-xl rounded border-2 ${formData.icon === icon ? 'border-primary' : 'border-border'}`}
-                      onClick={() => setFormData({ ...formData, icon })}
-                    >
-                      {icon}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    className={`w-10 h-10 text-xl rounded border-2 ${formData.category === 'savings' ? 'border-primary' : 'border-border'}`}
+                    onClick={() => setFormData({ ...formData, category: 'savings' })}
+                  >
+                    Tiết kiệm
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-10 h-10 text-xl rounded border-2 ${formData.category === 'investment' ? 'border-primary' : 'border-border'}`}
+                    onClick={() => setFormData({ ...formData, category: 'investment' })}
+                  >
+                    Đầu tư
+                  </button>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Màu sắc</Label>
-                <div className="flex gap-2 flex-wrap">
-                  {colorOptions.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={`w-10 h-10 rounded border-2 ${formData.color === color ? 'border-primary' : 'border-border'}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setFormData({ ...formData, color })}
-                    />
-                  ))}
-                </div>
+                <Label>Mô tả</Label>
+                <Input
+                  id="description"
+                  placeholder="Mô tả mục tiêu của bạn..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
               </div>
               <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
                 {editingGoal ? 'Cập nhật' : 'Tạo mục tiêu'}
@@ -297,19 +322,7 @@ export function Goals() {
       </Card>
 
       {/* Goals List */}
-      {goals.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Target className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">Chưa có mục tiêu nào</p>
-            <p className="text-sm text-muted-foreground mb-4">Tạo mục tiêu tiết kiệm để bắt đầu</p>
-            <Button onClick={() => setIsOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo mục tiêu đầu tiên
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
+      {hasGoals ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {goals.map((goal: any) => (
             <Card key={goal.id} className="relative overflow-hidden">
@@ -385,10 +398,39 @@ export function Goals() {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Target className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium mb-2">Chưa có mục tiêu nào</p>
+            <p className="text-sm text-muted-foreground mb-4">Tạo mục tiêu tiết kiệm để bắt đầu</p>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Tạo mục tiêu đầu tiên
+            </Button>
+            <Button
+              className="mt-4"
+              variant="outline"
+              onClick={loadSampleGoals}
+              disabled={loadingSample}
+            >
+              <Lightbulb className="w-4 h-4 mr-2" />
+              Tải mẫu mục tiêu
+            </Button>
+            {loadingSample && (
+              <Alert className="mt-4">
+                <Lightbulb className="w-4 h-4 mr-2" />
+                <AlertDescription>
+                  Đang tải mẫu mục tiêu...
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Allocate Dialog */}
-      <Dialog open={allocateDialogOpen} onOpenChange={setAllocateDialogOpen}>
+      <Dialog open={allocateOpen} onOpenChange={setAllocateOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cộng tiền vào mục tiêu</DialogTitle>

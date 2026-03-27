@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { chatApi } from '../../lib/api';
+import { useStore } from '../../lib/store';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -28,8 +29,10 @@ export function AIChat() {
       timestamp: new Date(),
     },
   ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const { accessToken } = useStore();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Pre-compute data
@@ -37,12 +40,14 @@ export function AIChat() {
     queryKey: ['ai-precompute'],
     queryFn: () => chatApi.precompute(),
     staleTime: 5 * 60 * 1000,
+    enabled: !!accessToken,
   });
 
-  const chatMutation = useMutation({
-    mutationFn: (message: string) => chatApi.sendMessage(message),
+  // Send message mutation
+  const sendMutation = useMutation({
+    mutationFn: ({ message, context }: any) => chatApi.sendMessage(message, context),
     onSuccess: (data) => {
-      const aiResponse: Message = {
+      const aiMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
         content: data.data.response,
@@ -50,147 +55,171 @@ export function AIChat() {
         model: data.data.model,
         fromCache: data.data.fromCache,
       };
-      setMessages((prev) => [...prev, aiResponse]);
+      setMessages((prev) => [...prev, aiMessage]);
+      setIsTyping(false);
     },
     onError: () => {
       toast.error('Không thể gửi tin nhắn');
+      setIsTyping(false);
     },
   });
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const el = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+    if (messagesEndRef.current) {
+      const el = messagesEndRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (el) el.scrollTop = el.scrollHeight;
     }
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || chatMutation.isPending) return;
+  const handleSend = () => {
+    if (!input.trim() || isTyping) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputMessage,
+      content: input,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    chatMutation.mutate(inputMessage);
-    setInputMessage('');
-    inputRef.current?.focus();
+    setIsTyping(true);
+    setInput('');
+
+    // Send with precomputed context
+    sendMutation.mutate({
+      message: input,
+      context: precomputeData?.data,
+    });
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const quickQuestions = [
-    { icon: TrendingDown, text: 'Chi tiêu tháng này của tôi?', color: 'text-red-500' },
-    { icon: TrendingUp, text: 'Thu nhập tháng này bao nhiêu?', color: 'text-green-500' },
-    { icon: DollarSign, text: 'Số dư và tỷ lệ tiết kiệm?', color: 'text-blue-500' },
-    { icon: Sparkles, text: 'Tư vấn tiết kiệm chi tiết', color: 'text-purple-500' },
-    { icon: Database, text: 'Top danh mục chi tiêu nhiều nhất', color: 'text-orange-500' },
-    { icon: Brain, text: 'Phân tích xu hướng chi tiêu', color: 'text-pink-500' },
+    { icon: DollarSign, text: 'Tôi đã chi bao nhiêu tháng này?', color: 'text-green-600' },
+    { icon: TrendingUp, text: 'Top 3 danh mục chi tiêu nhiều nhất?', color: 'text-blue-600' },
+    { icon: TrendingDown, text: 'So sánh chi tiêu tháng này với tháng trước', color: 'text-purple-600' },
+    { icon: Sparkles, text: 'Gợi ý để tiết kiệm nhiều hơn', color: 'text-orange-600' },
   ];
 
-  const getModelBadge = (model?: string, fromCache?: boolean) => {
-    if (fromCache) return <Badge variant="outline" className="text-[10px] gap-1"><Zap className="w-2.5 h-2.5" />Cache</Badge>;
-    if (model === 'precompute') return <Badge variant="outline" className="text-[10px] gap-1 text-green-600"><Database className="w-2.5 h-2.5" />Instant</Badge>;
-    if (model?.includes('flash')) return <Badge variant="outline" className="text-[10px] gap-1 text-blue-600"><Zap className="w-2.5 h-2.5" />Gemini Flash</Badge>;
-    if (model?.includes('pro') || model?.includes('gemini')) return <Badge variant="outline" className="text-[10px] gap-1 text-purple-600"><Brain className="w-2.5 h-2.5" />Gemini Pro</Badge>;
-    if (model === 'fallback') return <Badge variant="outline" className="text-[10px] gap-1 text-amber-600"><Database className="w-2.5 h-2.5" />Local</Badge>;
-    return null;
-  };
-
-  const precomputed = precomputeData?.data;
-  const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
-
   return (
-    <div className="container mx-auto p-4 md:p-6 h-[calc(100vh-4rem)] flex flex-col gap-4">
-      {/* Pre-computed Quick Stats */}
-      {precomputed && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <Card className="border-green-200 dark:border-green-900">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-gray-500 uppercase">Thu nhập</p>
-              <p className="text-sm font-bold text-green-600">{fmt(precomputed.totalIncome || 0)}đ</p>
-            </CardContent>
-          </Card>
-          <Card className="border-red-200 dark:border-red-900">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-gray-500 uppercase">Chi tiêu</p>
-              <p className="text-sm font-bold text-red-600">{fmt(precomputed.totalExpense || 0)}đ</p>
-            </CardContent>
-          </Card>
-          <Card className="border-blue-200 dark:border-blue-900">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-gray-500 uppercase">Tiết kiệm</p>
-              <p className="text-sm font-bold text-blue-600">{precomputed.savingsRate || 0}%</p>
-            </CardContent>
-          </Card>
-          <Card className="border-purple-200 dark:border-purple-900">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-gray-500 uppercase">Dự kiến chi</p>
-              <p className="text-sm font-bold text-purple-600">{fmt(precomputed.projectedExpense || 0)}đ</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-5xl">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <Bot className="w-5 h-5 text-white" />
+          </div>
+          AI Chat - Trợ lý tài chính
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Hỏi bất cứ điều gì về tài chính của bạn. Được hỗ trợ bởi Google Gemini AI 🚀
+        </p>
+      </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        <CardHeader className="border-b py-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white" />
+      {/* AI Router Info Banner */}
+      <Card className="border-indigo-200 dark:border-indigo-900 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
+              <Zap className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <CardTitle className="text-base flex items-center gap-2">
-                AI Tài chính
-                <Badge variant="secondary" className="text-[10px]">Router</Badge>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Simple → Instant | Medium → Fast AI | Complex → Smart AI
-              </CardDescription>
+              <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                🎯 AI Router thông minh
+                <Badge variant="secondary" className="text-xs">Miễn phí 100%</Badge>
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Hệ thống tự động chọn phương pháp trả lời tối ưu cho câu hỏi của bạn:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-start gap-2 text-sm">
+                  <Database className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-medium">Cache thông minh:</span>
+                    <span className="text-muted-foreground ml-1">Câu đơn giản → Trả lời tức thì từ dữ liệu có sẵn</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <Brain className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-medium">Gemini AI:</span>
+                    <span className="text-muted-foreground ml-1">Câu phức tạp → Phân tích sâu với AI</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </CardHeader>
+        </CardContent>
+      </Card>
 
-        <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+      {/* Chat Area */}
+      <Card className="h-[500px] flex flex-col">
+        <CardHeader className="border-b">
+          <CardTitle className="text-lg">Trò chuyện</CardTitle>
+          <CardDescription>
+            {precomputeData ? (
+              <span className="text-green-600 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                Dữ liệu đã sẵn sàng - Trả lời nhanh hơn!
+              </span>
+            ) : (
+              'Đang tải dữ liệu...'
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col p-0">
+          <ScrollArea ref={messagesEndRef} className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
                 >
-                  <Avatar className="w-7 h-7">
-                    <AvatarFallback className={message.role === 'assistant' ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-primary'}>
-                      {message.role === 'assistant' ? <Bot className="w-3.5 h-3.5 text-white" /> : <User className="w-3.5 h-3.5 text-white" />}
+                  <Avatar className="w-8 h-8 flex-shrink-0">
+                    <AvatarFallback className={message.role === 'assistant' ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}>
+                      {message.role === 'assistant' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                     </AvatarFallback>
                   </Avatar>
-                  <div className={`flex-1 max-w-[80%] ${message.role === 'user' ? 'text-right' : ''}`}>
-                    <div className={`inline-block px-3 py-2 rounded-2xl ${
-                      message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                    }`}>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 px-2">
-                      <p className="text-[10px] text-muted-foreground">
-                        {message.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      {message.role === 'assistant' && getModelBadge(message.model, message.fromCache)}
+                  <div className={`flex-1 ${message.role === 'user' ? 'flex justify-end' : ''}`}>
+                    <div
+                      className={`inline-block px-4 py-3 rounded-2xl max-w-[85%] ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs opacity-70">
+                        <span>{new Date(message.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                        {message.model && (
+                          <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                            {message.fromCache ? '⚡ Cache' : `🤖 ${message.model}`}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
-              {chatMutation.isPending && (
+              {isTyping && (
                 <div className="flex gap-3">
-                  <Avatar className="w-7 h-7">
-                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500">
-                      <Bot className="w-3.5 h-3.5 text-white" />
+                  <Avatar className="w-8 h-8 flex-shrink-0">
+                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                      <Bot className="w-4 h-4" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="bg-muted px-3 py-2 rounded-2xl">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span className="text-sm">Đang xử lý...</span>
+                  <div className="flex-1">
+                    <div className="inline-block px-4 py-3 rounded-2xl bg-muted">
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -198,44 +227,47 @@ export function AIChat() {
             </div>
           </ScrollArea>
 
-          {messages.length <= 2 && (
-            <div className="p-3 border-t bg-muted/30">
-              <p className="text-xs font-medium mb-2">Câu hỏi gợi ý:</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                {quickQuestions.map((q, index) => {
-                  const Icon = q.icon;
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => { setInputMessage(q.text); inputRef.current?.focus(); }}
-                      className="flex items-center gap-2 p-2 rounded-lg border bg-background hover:bg-accent transition-colors text-left"
-                    >
-                      <Icon className={`w-3.5 h-3.5 ${q.color}`} />
-                      <span className="text-xs">{q.text}</span>
-                    </button>
-                  );
-                })}
+          {/* Quick Questions */}
+          {messages.length === 1 && (
+            <div className="px-4 pb-4 border-t pt-4">
+              <p className="text-sm font-medium mb-3">Câu hỏi gợi ý:</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {quickQuestions.map((q, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setInput(q.text);
+                      inputRef.current?.focus();
+                    }}
+                    className="text-left p-3 rounded-lg border hover:bg-accent transition-colors text-sm flex items-center gap-2"
+                  >
+                    <q.icon className={`w-4 h-4 ${q.color} flex-shrink-0`} />
+                    <span>{q.text}</span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          <div className="p-3 border-t">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
+          {/* Input */}
+          <div className="border-t p-4">
+            <div className="flex gap-2">
               <Input
                 ref={inputRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
                 placeholder="Hỏi về tài chính của bạn..."
-                disabled={chatMutation.isPending}
-                className="flex-1 text-sm"
+                disabled={isTyping || !accessToken}
+                className="flex-1"
               />
-              <Button type="submit" disabled={!inputMessage.trim() || chatMutation.isPending} size="icon">
-                {chatMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              <Button onClick={handleSend} disabled={!input.trim() || isTyping || !accessToken}>
+                {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
-            </form>
-            <p className="text-[10px] text-muted-foreground mt-1 text-center">
-              AI Router: câu đ��n giản → trả lời tức thì, câu phức tạp → AI phân tích
-            </p>
+            </div>
+            {!accessToken && (
+              <p className="text-xs text-muted-foreground mt-2">Vui lòng đăng nhập để sử dụng AI Chat</p>
+            )}
           </div>
         </CardContent>
       </Card>

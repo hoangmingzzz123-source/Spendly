@@ -14,7 +14,7 @@ import { Plus, Users, UserPlus, LogOut, Crown, Mail, AlertCircle } from 'lucide-
 
 export function Family() {
   const queryClient = useQueryClient();
-  const { user, setFamilyGroup } = useStore();
+  const { user, setFamilyGroup, accessToken } = useStore();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -24,6 +24,7 @@ export function Family() {
   const { data: groupData, isLoading } = useQuery({
     queryKey: ['family-group'],
     queryFn: () => familyApi.getGroup(),
+    enabled: !!accessToken,
   });
 
   const familyGroup = groupData?.data;

@@ -12,10 +12,13 @@ import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, ArrowUpCircle, ArrowDownCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useStore } from '../../lib/store';
 
 export function Transactions() {
   const queryClient = useQueryClient();
+  const { user, accessToken } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [formData, setFormData] = useState({
     amount: '',
     type: 'EXPENSE',
@@ -28,16 +31,19 @@ export function Transactions() {
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions'],
     queryFn: () => transactionsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => accountsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const createMutation = useMutation({

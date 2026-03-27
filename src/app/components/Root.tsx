@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router';
 import { useStore } from '../../lib/store';
+import { queryClient } from '../App';
 import { Button } from './ui/button';
 import { WelcomeDialog } from './WelcomeDialog';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
@@ -50,7 +51,11 @@ export function Root() {
   }, [accessToken, navigate]);
 
   const handleLogout = () => {
+    // Clear React Query cache
+    queryClient.clear();
+    // Clear Zustand store
     logout();
+    // Navigate to login
     navigate('/login');
   };
 

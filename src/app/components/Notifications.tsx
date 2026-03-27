@@ -20,7 +20,7 @@ interface Notification {
 }
 
 export function Notifications() {
-  const { currentMonth } = useStore();
+  const { currentMonth, user, accessToken } = useStore();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -28,16 +28,19 @@ export function Notifications() {
   const { data: remindersData } = useQuery({
     queryKey: ['reminders'],
     queryFn: () => remindersApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const { data: budgetsData } = useQuery({
     queryKey: ['budgets', currentMonth],
     queryFn: () => budgetsApi.getAll(currentMonth),
+    enabled: !!accessToken,
   });
 
   const { data: goalsData } = useQuery({
     queryKey: ['goals'],
     queryFn: () => goalsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const reminders = remindersData?.data || [];

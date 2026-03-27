@@ -5,12 +5,14 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       refetchOnWindowFocus: false,
-      retry: 1,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      retry: false, // ✅ Disable retry completely to prevent 401 retries
     },
   },
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { transactionsApi, categoriesApi } from '../../lib/api';
+import { useStore } from '../../lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -9,22 +10,24 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOf
 import { vi } from 'date-fns/locale';
 
 export function Calendar() {
+  const { user, accessToken } = useStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'year'>('month');
 
   // Get date range based on view
   const getDateRange = () => {
     if (view === 'month') {
+      const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       return {
-        from: format(startOfMonth(currentDate), 'yyyy-MM-dd'),
-        to: format(endOfMonth(currentDate), 'yyyy-MM-dd'),
-      };
-    } else {
-      return {
-        from: format(startOfYear(currentDate), 'yyyy-MM-dd'),
-        to: format(endOfYear(currentDate), 'yyyy-MM-dd'),
+        from: firstDay.toISOString().split('T')[0],
+        to: lastDay.toISOString().split('T')[0],
       };
     }
+    return {
+      from: `${currentDate.getFullYear()}-01-01`,
+      to: `${currentDate.getFullYear()}-12-31`,
+    };
   };
 
   const dateRange = getDateRange();
@@ -32,11 +35,13 @@ export function Calendar() {
   const { data: transactionsData, isLoading } = useQuery({
     queryKey: ['transactions', dateRange.from, dateRange.to],
     queryFn: () => transactionsApi.getAll(dateRange),
+    enabled: !!accessToken,
   });
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const transactions = transactionsData?.data || [];

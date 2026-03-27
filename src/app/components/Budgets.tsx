@@ -11,35 +11,41 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
-import { Plus, TrendingUp, AlertTriangle, CheckCircle2, Edit2, Trash2 } from 'lucide-react';
+import { Plus, TrendingUp, AlertTriangle, CheckCircle2, Edit2, Trash2, Lightbulb, Sparkles } from 'lucide-react';
+import { SAMPLE_BUDGET_TEMPLATES } from '../../lib/sampleData';
+import { Alert, AlertDescription } from './ui/alert';
 
 export function Budgets() {
-  const { currentMonth } = useStore();
   const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = useState(false);
+  const { currentMonth, user, accessToken } = useStore();
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<any>(null);
-
   const [formData, setFormData] = useState({
     categoryId: '',
     amount: '',
-    month: currentMonth,
+    period: 'monthly',
   });
+  const [loadingSample, setLoadingSample] = useState(false);
 
   // Fetch budgets
   const { data: budgetsData, isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets', currentMonth],
     queryFn: () => budgetsApi.getAll(currentMonth),
+    enabled: !!accessToken,
   });
 
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const budgets = budgetsData?.data || [];
   const categories = categoriesData?.data || [];
   const expenseCategories = categories.filter((c: any) => c.type === 'EXPENSE');
+  const hasBudgets = budgets.length > 0;
+  const hasCategories = expenseCategories.length > 0;
 
   // Create budget mutation
   const createMutation = useMutation({
@@ -47,7 +53,7 @@ export function Budgets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       toast.success('Ngân sách đã được tạo');
-      setIsOpen(false);
+      setDialogOpen(false);
       resetForm();
     },
     onError: () => {
@@ -61,7 +67,7 @@ export function Budgets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       toast.success('Ngân sách đã được cập nhật');
-      setIsOpen(false);
+      setDialogOpen(false);
       setEditingBudget(null);
       resetForm();
     },
@@ -86,7 +92,7 @@ export function Budgets() {
     setFormData({
       categoryId: '',
       amount: '',
-      month: currentMonth,
+      period: 'monthly',
     });
     setEditingBudget(null);
   };
@@ -114,14 +120,53 @@ export function Budgets() {
     setFormData({
       categoryId: budget.categoryId,
       amount: budget.amount.toString(),
-      month: budget.month,
+      period: budget.period,
     });
-    setIsOpen(true);
+    setDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm('Bạn có chắc muốn xóa ngân sách này?')) {
       deleteMutation.mutate(id);
+    }
+  };
+
+  // Load sample budgets
+  const loadSampleBudgets = async () => {
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng này');
+      return;
+    }
+    
+    if (!hasCategories) {
+      toast.error('Vui lòng tạo danh mục chi tiêu trước');
+      return;
+    }
+
+    setLoadingSample(true);
+    try {
+      for (const template of SAMPLE_BUDGET_TEMPLATES) {
+        // Find matching category
+        const category = expenseCategories.find((cat: any) => 
+          cat.name.toLowerCase().includes(template.name.toLowerCase().split(' ')[0])
+        );
+        
+        if (category) {
+          await budgetsApi.create({
+            categoryId: category.id,
+            amount: template.amount.toString(),
+            month: currentMonth,
+          });
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      toast.success('Đã tải ngân sách mẫu thành công! 🎉');
+    } catch (error: any) {
+      console.error('Load sample budgets error:', error);
+      toast.error(error.message || 'Không thể tải ngân sách mẫu');
+    } finally {
+      setLoadingSample(false);
     }
   };
 
@@ -151,68 +196,94 @@ export function Budgets() {
           <h1 className="text-3xl font-bold">Ngân sách</h1>
           <p className="text-muted-foreground">Quản lý ngân sách chi tiêu theo danh mục</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo ngân sách
+        <div className="flex gap-2">
+          {!hasBudgets && hasCategories && (
+            <Button variant="outline" onClick={loadSampleBudgets} disabled={loadingSample}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Tải mẫu
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingBudget ? 'Chỉnh sửa ngân sách' : 'Tạo ngân sách mới'}</DialogTitle>
-              <DialogDescription>
-                Đặt ngân sách cho danh mục chi tiêu để theo dõi và kiểm soát tốt hơn
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoryId">Danh mục chi tiêu</Label>
-                <Select
-                  value={formData.categoryId}
-                  onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn danh mục" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {expenseCategories.map((cat: any) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Số tiền (VNĐ)</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="5000000"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="month">Tháng</Label>
-                <Input
-                  id="month"
-                  type="month"
-                  value={formData.month}
-                  onChange={(e) => setFormData({ ...formData, month: e.target.value })}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
-                {editingBudget ? 'Cập nhật' : 'Tạo ngân sách'}
+          )}
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Tạo ngân sách
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingBudget ? 'Chỉnh sửa ngân sách' : 'Tạo ngân sách mới'}</DialogTitle>
+                <DialogDescription>
+                  Đặt ngân sách cho danh mục chi tiêu để theo dõi và kiểm soát tốt hơn
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="categoryId">Danh mục chi tiêu</Label>
+                  <Select
+                    value={formData.categoryId}
+                    onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn danh mục" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {expenseCategories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Số tiền (VNĐ)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    placeholder="5000000"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="period">Kỳ hạn</Label>
+                  <Select
+                    value={formData.period}
+                    onValueChange={(value) => setFormData({ ...formData, period: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn kỳ hạn" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Hàng tháng</SelectItem>
+                      <SelectItem value="quarterly">Hàng quý</SelectItem>
+                      <SelectItem value="yearly">Hàng năm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {editingBudget ? 'Cập nhật' : 'Tạo ngân sách'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Sample data suggestion */}
+      {!hasBudgets && hasCategories && (
+        <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+          <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100">
+            <strong>Mẹo:</strong> Bạn có thể tải {SAMPLE_BUDGET_TEMPLATES.length} mẫu ngân sách phổ biến 
+            (Ăn uống, Di chuyển, Mua sắm...) để bắt đầu nhanh hơn! Nhấn nút <strong>"Tải mẫu"</strong> ở trên.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Overall Summary */}
       <Card>
@@ -252,7 +323,7 @@ export function Budgets() {
             <TrendingUp className="w-12 h-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium mb-2">Chưa có ngân sách nào</p>
             <p className="text-sm text-muted-foreground mb-4">Tạo ngân sách để theo dõi chi tiêu của bạn</p>
-            <Button onClick={() => setIsOpen(true)}>
+            <Button onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Tạo ngân sách đầu tiên
             </Button>

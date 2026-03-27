@@ -33,16 +33,18 @@ import {
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#f97316'];
 
 export function Dashboard() {
-  const { currentMonth, user } = useStore();
+  const { currentMonth, user, accessToken } = useStore();
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['dashboard', currentMonth],
     queryFn: () => dashboardApi.getSummary(currentMonth),
+    enabled: !!accessToken,
   });
 
   const { data: balanceData } = useQuery({
     queryKey: ['accounts', 'balance'],
     queryFn: () => accountsApi.getBalance(),
+    enabled: !!accessToken,
   });
 
   const dashboardData = summary?.data;

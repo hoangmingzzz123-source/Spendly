@@ -19,26 +19,30 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 export function Analytics() {
-  const { currentMonth } = useStore();
+  const { currentMonth, user, accessToken } = useStore();
 
   const { data: summary } = useQuery({
     queryKey: ['dashboard', currentMonth],
     queryFn: () => dashboardApi.getSummary(currentMonth),
+    enabled: !!accessToken,
   });
 
   const { data: transactionsData } = useQuery({
     queryKey: ['transactions'],
     queryFn: () => transactionsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const { data: budgetsData } = useQuery({
     queryKey: ['budgets', currentMonth],
     queryFn: () => budgetsApi.getAll(currentMonth),
+    enabled: !!accessToken,
   });
 
   const { data: goalsData } = useQuery({
     queryKey: ['goals'],
     queryFn: () => goalsApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const dashboardData = summary?.data;

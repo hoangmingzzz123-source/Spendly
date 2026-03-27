@@ -10,29 +10,43 @@ export const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-serv
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   let token = null;
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+
+
   try {
     if (typeof window !== 'undefined') {
-      token = localStorage.getItem('access_token');
+      // token = localStorage.getItem('access_token');
+       token = session?.access_token;
+       console.log('[API] Retrieved token from session:', token);
     }
   } catch (error) {
     console.error('[API] Failed to access localStorage:', error);
   }
   
-  // Debug logging
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.log(`[API] Request to ${endpoint}, has token: ${!!token}`);
-  }
+  // Skip auth endpoints (login, register) - but send anon key for Supabase functions
+  const isAuthEndpoint = endpoint.startsWith('/auth/');
+  
+  // Debug logging - always log in development
+  console.log(`[API] 📤 Request to: ${endpoint}, has access_token: ${!!token}`);
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'apikey': publicAnonKey, // Required for Supabase edge functions
     ...options.headers as Record<string, string>,
   };
   
-  // Only send Authorization header if we have a real access token
-  // Do NOT send publicAnonKey as Bearer token (it's not an access token)
-  if (token) {
+  // For auth endpoints, send anon key as Supabase functions may require it
+  if (isAuthEndpoint) {
+    headers['Authorization'] = `Bearer ${token || publicAnonKey}`;
+    console.log('[API] 🔑 Using publicAnonKey for auth endpoint');
+  } else if (token) {
+    // For protected endpoints, use access token
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('[API] ✅ Using access_token');
   }
+  // apikey header is always included above
   
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -41,9 +55,10 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    console.error(`[API] Request failed: ${response.status} ${response.statusText}`, error);
+    console.error(`[API] ❌ Request FAILED: ${response.status} for ${endpoint}`, error);
     throw new Error(error.error || 'Request failed');
   }
 
+  console.log(`[API] ✅ Request SUCCESS: ${endpoint}`);
   return response.json();
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi } from '../../lib/api';
+import { useStore } from '../../lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -9,7 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Tag, Loader2 } from 'lucide-react';
+import { Plus, Tag, Loader2, Lightbulb, Sparkles } from 'lucide-react';
+import { SAMPLE_CATEGORIES, SAMPLE_SUBCATEGORIES } from '../../lib/sampleData';
+import { Alert, AlertDescription } from './ui/alert';
 
 const COLORS = [
   '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', 
@@ -18,17 +21,20 @@ const COLORS = [
 
 export function Categories() {
   const queryClient = useQueryClient();
+  const { user, accessToken } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    type: 'EXPENSE',
-    parentId: '',
+    icon: '🏷️',
     color: '#3B82F6',
+    type: 'EXPENSE',
   });
+  const [loadingSample, setLoadingSample] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.getAll(),
+    enabled: !!accessToken,
   });
 
   const createMutation = useMutation({
@@ -37,12 +43,40 @@ export function Categories() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Tạo danh mục thành công!');
       setDialogOpen(false);
-      setFormData({ name: '', type: 'EXPENSE', parentId: '', color: '#3B82F6' });
+      setFormData({ name: '', icon: '🏷️', color: '#3B82F6', type: 'EXPENSE' });
     },
     onError: (error: any) => {
       toast.error(error.message || 'Có lỗi xảy ra');
     },
   });
+
+  // Load sample categories
+  const loadSampleCategories = async () => {
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng này');
+      return;
+    }
+    
+    setLoadingSample(true);
+    try {
+      // Create expense categories
+      for (const category of SAMPLE_CATEGORIES.EXPENSE) {
+        await categoriesApi.create({ ...category, type: 'EXPENSE' });
+      }
+      // Create income categories
+      for (const category of SAMPLE_CATEGORIES.INCOME) {
+        await categoriesApi.create({ ...category, type: 'INCOME' });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Đã tải danh mục mẫu thành công! 🎉');
+    } catch (error: any) {
+      console.error('Load sample categories error:', error);
+      toast.error(error.message || 'Không thể tải danh mục mẫu');
+    } finally {
+      setLoadingSample(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +89,7 @@ export function Categories() {
   const categories = data?.data || [];
   const incomeCategories = categories.filter((c: any) => c.type === 'INCOME');
   const expenseCategories = categories.filter((c: any) => c.type === 'EXPENSE');
+  const hasNoCategories = categories.length === 0;
 
   // Organize into parent-child structure
   const organizeCategories = (cats: any[]) => {
@@ -132,103 +167,132 @@ export function Categories() {
           </p>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm danh mục
+        <div className="flex gap-2">
+          {hasNoCategories && (
+            <Button variant="outline" onClick={loadSampleCategories} disabled={loadingSample}>
+              {loadingSample ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Đang tải...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Tải mẫu
+                </>
+              )}
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Tạo danh mục mới</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Tên danh mục *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="VD: Ăn uống"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="type">Loại *</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value, parentId: '' })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INCOME">Thu nhập</SelectItem>
-                    <SelectItem value="EXPENSE">Chi tiêu</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
-                <Select
-                  value={formData.parentId}
-                  onValueChange={(value) => setFormData({ ...formData, parentId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Không có" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Không có</SelectItem>
-                    {categories
-                      .filter((c: any) => c.type === formData.type && !c.parentId)
-                      .map((c: any) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Màu sắc</Label>
-                <div className="flex gap-2 flex-wrap">
-                  {COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, color })}
-                      className={`w-10 h-10 rounded-full border-2 ${
-                        formData.color === color ? 'border-gray-900 dark:border-white' : 'border-transparent'
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm danh mục
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tạo danh mục mới</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Tên danh mục *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="VD: Ăn uống"
+                    required
+                  />
                 </div>
-              </div>
 
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Hủy
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Đang tạo...
-                    </>
-                  ) : (
-                    'Tạo danh mục'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Loại *</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => setFormData({ ...formData, type: value, parentId: '' })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INCOME">Thu nhập</SelectItem>
+                      <SelectItem value="EXPENSE">Chi tiêu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
+                  <Select
+                    value={formData.parentId}
+                    onValueChange={(value) => setFormData({ ...formData, parentId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Không có" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Không có</SelectItem>
+                      {categories
+                        .filter((c: any) => c.type === formData.type && !c.parentId)
+                        .map((c: any) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Màu sắc</Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, color })}
+                        className={`w-10 h-10 rounded-full border-2 ${
+                          formData.color === color ? 'border-gray-900 dark:border-white' : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    Hủy
+                  </Button>
+                  <Button type="submit" disabled={createMutation.isPending}>
+                    {createMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Đang tạo...
+                      </>
+                    ) : (
+                      'Tạo danh mục'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Sample data suggestion when empty */}
+      {hasNoCategories && (
+        <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+          <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100">
+            <strong>Mẹo:</strong> Bạn có thể tải {SAMPLE_CATEGORIES.EXPENSE.length} danh mục chi tiêu 
+            và {SAMPLE_CATEGORIES.INCOME.length} danh mục thu nhập mẫu để bắt đầu nhanh hơn! 
+            Nhấn nút <strong>"Tải mẫu"</strong> ở trên.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="expense" className="w-full">
