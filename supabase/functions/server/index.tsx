@@ -1219,66 +1219,43 @@ async function getUserId(c: any): Promise<string | null> {
   try {
     console.log('[AUTH DEBUG] === getUserId called ===');
     
-    // Method 1: Try Supabase auth context first
+    // Method 1: Check context
     const authUser = c.get('user');
     if (authUser?.id) {
       console.log(`[AUTH DEBUG] ✅ User from context: ${authUser.id}`);
       return authUser.id;
     }
-    console.log('[AUTH DEBUG] No user in context');
 
-    // Method 2: Access raw headers directly (case-insensitive)
-    console.log('[AUTH DEBUG] Accessing raw request...');
-    let authHeader: string | null = null;
+    // Method 2: Read from custom header (Supabase strips Authorization header)
+    console.log('[AUTH DEBUG] Reading from x-access-token header...');
+    let token: string | null = null;
     
     try {
-      // Try c.req.header first (Hono standard)
-      authHeader = c.req.header('Authorization');
-      if (!authHeader) authHeader = c.req.header('authorization');
-      console.log('[AUTH DEBUG] c.req.header result:', authHeader ? 'Found' : 'Not found');
+      token = c.req.header('x-access-token');
+      console.log('[AUTH DEBUG] x-access-token:', token ? `Found (${token.length} chars)` : 'Not found');
     } catch (e) {
-      console.log('[AUTH DEBUG] c.req.header error:', e);
+      console.log('[AUTH DEBUG] x-access-token read error:', e);
     }
 
-    // Try raw headers
-    if (!authHeader) {
+    // Fallback: try Authorization header (in case client sends it)
+    if (!token) {
       try {
-        const rawHeaders = c.req.raw?.headers;
-        console.log('[AUTH DEBUG] c.req.raw type:', typeof c.req.raw);
-        if (rawHeaders) {
-          authHeader = rawHeaders.get?.('authorization') || rawHeaders.get?.('Authorization');
-          console.log('[AUTH DEBUG] raw headers result:', authHeader ? 'Found' : 'Not found');
+        const authHeader = c.req.header('Authorization') || c.req.header('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+          token = authHeader.replace('Bearer ', '').trim();
+          console.log('[AUTH DEBUG] Fallback: Authorization header found');
         }
       } catch (e) {
-        console.log('[AUTH DEBUG] raw headers error:', e);
+        console.log('[AUTH DEBUG] Authorization header fallback error:', e);
       }
     }
 
-    // Try accessing all headers
-    if (!authHeader) {
-      try {
-        console.log('[AUTH DEBUG] Logging all available headers:');
-        const headerIterator = c.req.raw?.headers?.entries?.();
-        if (headerIterator) {
-          for (const [key, value] of headerIterator) {
-            console.log(`[AUTH DEBUG] Header: ${key} = ${value.slice(0, 50)}...`);
-            if (key.toLowerCase() === 'authorization') {
-              authHeader = value;
-            }
-          }
-        }
-      } catch (e) {
-        console.log('[AUTH DEBUG] Header iteration error:', e);
-      }
-    }
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`[AUTH DEBUG] ❌ No valid Authorization header. Got: "${authHeader?.slice(0, 50) || 'undefined'}"`);
+    if (!token) {
+      console.log('[AUTH DEBUG] ❌ No token found in headers');
       return null;
     }
 
-    const token = authHeader.replace('Bearer ', '').trim();
-    console.log(`[AUTH DEBUG] ✅ Extracted token, length: ${token.length}`);
+    console.log(`[AUTH DEBUG] ✅ Found token, length: ${token.length}`);
     
     try {
       const parts = token.split('.');

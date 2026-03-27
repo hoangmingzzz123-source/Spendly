@@ -50,9 +50,10 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token || publicAnonKey}`;
     console.log('[API] 🔑 Using publicAnonKey for auth endpoint');
   } else if (token) {
-    // For protected endpoints, use access token
-    headers['Authorization'] = `Bearer ${token}`;
-    console.log('[API] ✅ Using user access_token');
+    // For protected endpoints, use access token in custom header
+    // (Supabase edge runtime strips Authorization header, so use x-access-token instead)
+    headers['x-access-token'] = token;
+    console.log('[API] ✅ Using user access_token in x-access-token header');
   } else {
     // If no token, use publicAnonKey
     headers['Authorization'] = `Bearer ${publicAnonKey}`;
