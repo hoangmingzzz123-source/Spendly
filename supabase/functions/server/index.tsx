@@ -6,19 +6,6 @@ import * as kv from './kv_store.tsx';
 
 const app = new Hono();
 
-// Handle CORS preflight OPTIONS immediately (before middleware) with safety wrapper
-app.options('*', async (c) => {
-  try {
-    c.header('Access-Control-Allow-Origin', '*');
-    c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey');
-    return c.text('', 204);
-  } catch (e) {
-    console.error('[CORS] OPTIONS handler error:', e);
-    return c.json({ error: 'CORS preflight failed' }, 500);
-  }
-});
-
 // Middleware
 app.use('*', cors({
   origin: '*',
