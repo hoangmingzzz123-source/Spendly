@@ -3,9 +3,21 @@ import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import * as kv from './kv_store.tsx';
-import { base64url } from 'https://deno.land/std@0.208.0/encoding/base64url.ts';
 
 const app = new Hono();
+
+// Handle CORS preflight OPTIONS immediately (before middleware) with safety wrapper
+app.options('*', async (c) => {
+  try {
+    c.header('Access-Control-Allow-Origin', '*');
+    c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey');
+    return c.text('', 204);
+  } catch (e) {
+    console.error('[CORS] OPTIONS handler error:', e);
+    return c.json({ error: 'CORS preflight failed' }, 500);
+  }
+});
 
 // Middleware
 app.use('*', cors({
@@ -14,11 +26,6 @@ app.use('*', cors({
   allowHeaders: ['Content-Type', 'Authorization', 'apikey'],
 }));
 app.use('*', logger(console.log));
-
-// Handle CORS preflight without authentication
-app.options('*', (c) => {
-  return c.text('', 204);
-});
 
 // Supabase client
 const supabase = createClient(
@@ -1196,6 +1203,24 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 
 // ========== HELPER FUNCTIONS ==========
 
+// Simple base64url decoder
+function decodeBase64Url(str: string): string {
+  let output = str.replace(/-/g, '+').replace(/_/g, '/');
+  switch (output.length % 4) {
+    case 2:
+      output += '==';
+      break;
+    case 3:
+      output += '=';
+      break;
+  }
+  try {
+    return atob(output);
+  } catch (e) {
+    throw new Error(`Base64 decode failed: ${e}`);
+  }
+}
+
 async function getUserId(c: any): Promise<string | null> {
   try {
     // Get the authenticated user from Supabase context
@@ -1223,8 +1248,8 @@ async function getUserId(c: any): Promise<string | null> {
         return null;
       }
 
-      // Decode payload using Deno base64url
-      const payloadStr = new TextDecoder().decode(base64url.decode(parts[1]));
+      // Decode payload using simple base64url decoder
+      const payloadStr = decodeBase64Url(parts[1]);
       const payload = JSON.parse(payloadStr);
 
       console.log(`[AUTH DEBUG] Decoded JWT payload - role: ${payload.role}, sub: ${payload.sub}`);
