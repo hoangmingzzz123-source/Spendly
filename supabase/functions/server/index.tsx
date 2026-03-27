@@ -1192,8 +1192,6 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 async function getUserId(c: any): Promise<string | null> {
   try {
     // Get the authenticated user from Supabase context
-    // Supabase middleware automatically extracts and validates the JWT
-    
     const authUser = c.get('user');
     
     if (authUser?.id) {
@@ -1201,38 +1199,39 @@ async function getUserId(c: any): Promise<string | null> {
       return authUser.id;
     }
 
-    // Fallback: Check Authorization header if available
+    // Fallback: Extract and decode JWT from Authorization header
     const authHeader = c.req.header('Authorization');
-    if (!authHeader) {
-      console.log(`[AUTH DEBUG] No Authorization header`);
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log(`[AUTH DEBUG] No valid Authorization header`);
       return null;
     }
 
-    // Extract token and call Supabase REST API
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const token = authHeader.replace('Bearer ', '').trim();
     
-    if (!supabaseUrl || !anonKey) {
-      console.log('[AUTH DEBUG] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+    // Decode JWT without verification (edge function receives already-validated token from Supabase)
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.log('[AUTH DEBUG] Invalid JWT format');
+        return null;
+      }
+
+      // Decode payload (part 1)
+      const payloadStr = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(payloadStr);
+
+      const userId = payload.sub;
+      if (userId) {
+        console.log(`[AUTH DEBUG] User from JWT decode: ${userId}`);
+        return userId;
+      }
+
+      console.log('[AUTH DEBUG] No subject in JWT payload');
+      return null;
+    } catch (decodeError) {
+      console.log(`[AUTH DEBUG] JWT decode failed: ${decodeError}`);
       return null;
     }
-
-    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        'Authorization': authHeader,
-        'apikey': anonKey,
-      },
-    });
-
-    if (!response.ok) {
-      console.log(`[AUTH DEBUG] User verification failed: ${response.status}`);
-      return null;
-    }
-
-    const userData = await response.json();
-    console.log(`[AUTH DEBUG] User from REST API: ${userData.id}`);
-    return userData.id || null;
   } catch (error) {
     console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
     return null;
