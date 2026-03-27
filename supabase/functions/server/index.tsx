@@ -1189,6 +1189,36 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 });
 
 // ========== HELPER FUNCTIONS ==========
+
+// Base64 URL decode function compatible with Deno
+function base64UrlDecode(str: string): string {
+  let output = str.replace(/-/g, '+').replace(/_/g, '/');
+  switch (output.length % 4) {
+    case 0:
+      break;
+    case 2:
+      output += '==';
+      break;
+    case 3:
+      output += '=';
+      break;
+    default:
+      throw new Error('Invalid base64url string');
+  }
+
+  // Use TextDecoder to handle UTF-8 properly in Deno
+  try {
+    const binaryString = atob(output);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+  } catch (e) {
+    throw new Error(`Base64 decode failed: ${e}`);
+  }
+}
+
 async function getUserId(c: any): Promise<string | null> {
   try {
     // Get the authenticated user from Supabase context
@@ -1207,19 +1237,22 @@ async function getUserId(c: any): Promise<string | null> {
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
+    console.log(`[AUTH DEBUG] Token length: ${token.length}`);
     
     // Decode JWT without verification (edge function receives already-validated token from Supabase)
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
-        console.log('[AUTH DEBUG] Invalid JWT format');
+        console.log('[AUTH DEBUG] Invalid JWT format: wrong part count');
         return null;
       }
 
-      // Decode payload (part 1)
-      const payloadStr = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+      // Decode payload (part 1) using base64url
+      const payloadStr = base64UrlDecode(parts[1]);
       const payload = JSON.parse(payloadStr);
 
+      console.log(`[AUTH DEBUG] Decoded payload:`, payload);
+      
       const userId = payload.sub;
       if (userId) {
         console.log(`[AUTH DEBUG] User from JWT decode: ${userId}`);
