@@ -9,17 +9,23 @@ export const supabase = createClient(
 export const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-f5f5b39c`;
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  let token = null;
-  const {
-    data: { session }
-  } = await supabase.auth.getSession();
+  let token: string | null = null;
+  let sessionToken: string | null = null;
 
+  try {
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+    sessionToken = session?.access_token ?? null;
+  } catch (error) {
+    console.warn('[API] Failed to read Supabase session:', error);
+  }
 
   try {
     if (typeof window !== 'undefined') {
-      // token = localStorage.getItem('access_token');
-       token = session?.access_token;
-       console.log('[API] Retrieved token from session:', token);
+      const localToken = localStorage.getItem('access_token');
+      token = sessionToken || localToken;
+      console.log('[API] Retrieved token from session/localStorage:', token);
     }
   } catch (error) {
     console.error('[API] Failed to access localStorage:', error);
