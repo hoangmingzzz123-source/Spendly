@@ -1217,64 +1217,86 @@ function decodeBase64Url(str: string): string {
 
 async function getUserId(c: any): Promise<string | null> {
   try {
-    // Get the authenticated user from Supabase context
-    const authUser = c.get('user');
+    console.log('[AUTH DEBUG] === getUserId called ===');
     
+    // Method 1: Try Supabase auth context first
+    const authUser = c.get('user');
     if (authUser?.id) {
-      console.log(`[AUTH DEBUG] User from context: ${authUser.id}`);
+      console.log(`[AUTH DEBUG] ✅ User from context: ${authUser.id}`);
       return authUser.id;
     }
+    console.log('[AUTH DEBUG] No user in context');
 
-    // Fallback: Extract JWT from Authorization header and decode payload
-    console.log('[AUTH DEBUG] === HEADER DIAGNOSIS ===');
+    // Method 2: Access raw headers directly (case-insensitive)
+    console.log('[AUTH DEBUG] Accessing raw request...');
+    let authHeader: string | null = null;
     
-    // Try multiple ways to access headers
-    let authHeader = c.req.header('Authorization');
-    console.log('[AUTH DEBUG] Method 1 (Authorization):', authHeader ? 'Found, length: ' + authHeader.length : 'Not found');
-    
-    if (!authHeader) {
-      authHeader = c.req.header('authorization');
-      console.log('[AUTH DEBUG] Method 2 (authorization lowercase):', authHeader ? 'Found, length: ' + authHeader.length : 'Not found');
+    try {
+      // Try c.req.header first (Hono standard)
+      authHeader = c.req.header('Authorization');
+      if (!authHeader) authHeader = c.req.header('authorization');
+      console.log('[AUTH DEBUG] c.req.header result:', authHeader ? 'Found' : 'Not found');
+    } catch (e) {
+      console.log('[AUTH DEBUG] c.req.header error:', e);
     }
-    
+
+    // Try raw headers
     if (!authHeader) {
-      // Try accessing raw headers
       try {
-        const headers = c.req.raw?.headers;
-        if (headers) {
-          authHeader = headers.get?.('Authorization') || headers.get?.('authorization');
-          console.log('[AUTH DEBUG] Method 3 (raw headers):', authHeader ? 'Found, length: ' + authHeader.length : 'Not found');
+        const rawHeaders = c.req.raw?.headers;
+        console.log('[AUTH DEBUG] c.req.raw type:', typeof c.req.raw);
+        if (rawHeaders) {
+          authHeader = rawHeaders.get?.('authorization') || rawHeaders.get?.('Authorization');
+          console.log('[AUTH DEBUG] raw headers result:', authHeader ? 'Found' : 'Not found');
         }
       } catch (e) {
-        console.log('[AUTH DEBUG] Method 3 failed:', e);
+        console.log('[AUTH DEBUG] raw headers error:', e);
       }
     }
-    
+
+    // Try accessing all headers
+    if (!authHeader) {
+      try {
+        console.log('[AUTH DEBUG] Logging all available headers:');
+        const headerIterator = c.req.raw?.headers?.entries?.();
+        if (headerIterator) {
+          for (const [key, value] of headerIterator) {
+            console.log(`[AUTH DEBUG] Header: ${key} = ${value.slice(0, 50)}...`);
+            if (key.toLowerCase() === 'authorization') {
+              authHeader = value;
+            }
+          }
+        }
+      } catch (e) {
+        console.log('[AUTH DEBUG] Header iteration error:', e);
+      }
+    }
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`[AUTH DEBUG] ❌ No valid Authorization header. Received: "${authHeader?.slice(0, 50)}..."`);
+      console.log(`[AUTH DEBUG] ❌ No valid Authorization header. Got: "${authHeader?.slice(0, 50) || 'undefined'}"`);
       return null;
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
-    console.log(`[AUTH DEBUG] ✅ Extracted JWT token, length: ${token.length}`);
+    console.log(`[AUTH DEBUG] ✅ Extracted token, length: ${token.length}`);
     
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
-        console.log('[AUTH DEBUG] Invalid JWT format: expected 3 parts, got', parts.length);
+        console.log('[AUTH DEBUG] ❌ Invalid JWT: expected 3 parts, got', parts.length);
         return null;
       }
 
-      // Decode payload using simple base64url decoder
-      console.log('[AUTH DEBUG] Attempting to decode JWT part 1 (payload)');
+      console.log('[AUTH DEBUG] Decoding JWT payload...');
       const payloadStr = decodeBase64Url(parts[1]);
       const payload = JSON.parse(payloadStr);
 
-      console.log(`[AUTH DEBUG] ✅ Decoded JWT - role: ${payload.role}, sub: ${payload.sub}, exp: ${payload.exp}`);
+      console.log(`[AUTH DEBUG] ✅ Decoded JWT - role: ${payload.role}, sub: ${payload.sub}`);
       
       // Check expiration
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        console.log('[AUTH DEBUG] JWT expired');
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < now) {
+        console.log(`[AUTH DEBUG] ❌ JWT expired: ${payload.exp} < ${now}`);
         return null;
       }
       
@@ -1284,14 +1306,14 @@ async function getUserId(c: any): Promise<string | null> {
         return userId;
       }
 
-      console.log('[AUTH DEBUG] No subject in JWT payload');
+      console.log('[AUTH DEBUG] ❌ No subject in JWT payload');
       return null;
     } catch (decodeError) {
-      console.log(`[AUTH DEBUG] JWT decode error: ${decodeError}`);
+      console.log(`[AUTH DEBUG] ❌ JWT decode/parse error: ${decodeError}`);
       return null;
     }
   } catch (error) {
-    console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
+    console.log(`[AUTH DEBUG] ❌ Exception in getUserId: ${error}`);
     return null;
   }
 }
