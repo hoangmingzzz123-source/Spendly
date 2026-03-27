@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router';
 import { useStore } from '../../lib/store';
 import { Button } from './ui/button';
@@ -21,21 +21,20 @@ import {
   Menu,
   X,
   BarChart3,
-  Scan
+  Scan,
+  ChevronRight
 } from 'lucide-react';
-import { useState } from 'react';
 
 export function Root() {
   const navigate = useNavigate();
   const location = useLocation();
   const { accessToken, user, theme, setTheme, logout } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Apply theme to document
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
-
     if (theme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       root.classList.add(systemTheme);
@@ -55,46 +54,250 @@ export function Root() {
     navigate('/login');
   };
 
-  const navItems = [
-    { path: '/', label: 'Tổng quan', icon: Home },
-    { path: '/accounts', label: 'Tài khoản', icon: Wallet },
-    { path: '/categories', label: 'Danh mục', icon: Tags },
-    { path: '/transactions', label: 'Giao dịch', icon: ArrowLeftRight },
-    { path: '/timeline', label: 'Timeline', icon: History },
-    { path: '/calendar', label: 'Lịch', icon: CalendarIcon },
-    { path: '/budgets', label: 'Ngân sách', icon: TrendingUp },
-    { path: '/goals', label: 'Mục tiêu', icon: Target },
-    { path: '/reminders', label: 'Nhắc nhở', icon: Bell },
-    { path: '/family', label: 'Gia đình', icon: Users },
-    { path: '/chat', label: 'AI Chat', icon: Bot },
-    { path: '/analytics', label: 'Phân tích', icon: BarChart3 },
-    { path: '/settings', label: 'Cài đặt', icon: SettingsIcon },
-    { path: '/ocr', label: 'Quét bill', icon: Scan },
+  const navGroups = [
+    {
+      label: 'Chính',
+      items: [
+        { path: '/', label: 'Tổng quan', icon: Home },
+        { path: '/transactions', label: 'Giao dịch', icon: ArrowLeftRight },
+        { path: '/accounts', label: 'Tài khoản', icon: Wallet },
+        { path: '/categories', label: 'Danh mục', icon: Tags },
+      ],
+    },
+    {
+      label: 'Phân tích',
+      items: [
+        { path: '/analytics', label: 'Phân tích', icon: BarChart3 },
+        { path: '/timeline', label: 'Timeline', icon: History },
+        { path: '/calendar', label: 'Lịch', icon: CalendarIcon },
+      ],
+    },
+    {
+      label: 'Kế hoạch',
+      items: [
+        { path: '/budgets', label: 'Ngân sách', icon: TrendingUp },
+        { path: '/goals', label: 'Mục tiêu', icon: Target },
+        { path: '/reminders', label: 'Nhắc nhở', icon: Bell },
+      ],
+    },
+    {
+      label: 'Tiện ích',
+      items: [
+        { path: '/chat', label: 'AI Chat', icon: Bot },
+        { path: '/ocr', label: 'Quét bill', icon: Scan },
+        { path: '/family', label: 'Gia đình', icon: Users },
+        { path: '/settings', label: 'Cài đặt', icon: SettingsIcon },
+      ],
+    },
   ];
 
-  if (!accessToken) {
-    return null;
-  }
+  const allNavItems = navGroups.flatMap((g) => g.items);
+  const bottomNavItems = [
+    allNavItems.find((i) => i.path === '/')!,
+    allNavItems.find((i) => i.path === '/transactions')!,
+    allNavItems.find((i) => i.path === '/chat')!,
+    allNavItems.find((i) => i.path === '/analytics')!,
+    allNavItems.find((i) => i.path === '/settings')!,
+  ];
+
+  if (!accessToken) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-gray-950">
       <WelcomeDialog />
       <PWAInstallPrompt />
       
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col flex-1 min-h-0">
+      <aside className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 z-40 ${
+        sidebarCollapsed ? 'lg:w-20' : 'lg:w-[260px]'
+      }`}>
+        {/* Sidebar background with glassmorphism */}
+        <div className="flex flex-col flex-1 min-h-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200/60 dark:border-gray-800/60">
           {/* Logo */}
-          <div className="flex items-center h-16 flex-shrink-0 px-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
-              <Wallet className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between h-16 flex-shrink-0 px-4 border-b border-gray-100 dark:border-gray-800/60">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
+              {!sidebarCollapsed && (
+                <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent truncate">
+                  Spendly
+                </span>
+              )}
             </div>
-            <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">Spendly</span>
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors"
+            >
+              <ChevronRight className={`w-4 h-4 transition-transform ${sidebarCollapsed ? '' : 'rotate-180'}`} />
+            </button>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
+          <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto scrollbar-thin">
+            {navGroups.map((group) => (
+              <div key={group.label}>
+                {!sidebarCollapsed && (
+                  <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    {group.label}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.path;
+
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        title={sidebarCollapsed ? item.label : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group ${
+                          isActive
+                            ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
+                        } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                      >
+                        <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${
+                          isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                        }`} />
+                        {!sidebarCollapsed && <span>{item.label}</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+
+          {/* User section */}
+          <div className="flex-shrink-0 border-t border-gray-100 dark:border-gray-800/60 p-3">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-3 mb-3 px-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                    {user?.name?.[0]?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{user?.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                </div>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              className={`w-full rounded-xl text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all ${
+                sidebarCollapsed ? 'justify-center px-0' : 'justify-start'
+              }`}
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" />
+              {!sidebarCollapsed && <span className="ml-2">Đăng xuất</span>}
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50">
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60">
+          <div className="flex items-center justify-between h-14 px-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-indigo-500/25">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Spendly
+              </span>
+            </div>
+            
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="fixed inset-x-0 top-14 bottom-0 z-50 bg-white dark:bg-gray-900 overflow-y-auto">
+              <nav className="p-4 space-y-6">
+                {navGroups.map((group) => (
+                  <div key={group.label}>
+                    <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      {group.label}
+                    </p>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname === item.path;
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl ${
+                              isActive
+                                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                                : 'text-gray-600 dark:text-gray-400'
+                            }`}
+                          >
+                            <Icon className="w-5 h-5" />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+              <div className="border-t border-gray-100 dark:border-gray-800 p-4">
+                <div className="flex items-center gap-3 mb-4 px-2">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 flex items-center justify-center">
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                      {user?.name?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{user?.name}</p>
+                    <p className="text-xs text-gray-400">{user?.email}</p>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full rounded-xl" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Đăng xuất
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Main content */}
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-[260px]'} pt-14 lg:pt-0`}>
+        {/* Subtle background pattern */}
+        <div className="fixed inset-0 -z-10 pointer-events-none">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-100/40 dark:bg-indigo-900/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-100/30 dark:bg-purple-900/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
+        </div>
+        <div className="min-h-screen pb-20 lg:pb-0">
+          <Outlet />
+        </div>
+      </main>
+
+      {/* Mobile bottom nav */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-200/60 dark:border-gray-800/60">
+          <nav className="flex justify-around py-1.5 px-2">
+            {bottomNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               
@@ -102,133 +305,21 @@ export function Root() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex flex-col items-center justify-center px-2 py-1.5 rounded-xl min-w-[56px] transition-all ${
                     isActive
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-gray-400 dark:text-gray-500'
                   }`}
                 >
-                  <Icon className="w-5 h-5 mr-3" />
-                  {item.label}
+                  <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-indigo-50 dark:bg-indigo-500/10' : ''}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-medium mt-0.5">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
-
-          {/* User section */}
-          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {user?.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Đăng xuất
-            </Button>
-          </div>
         </div>
-      </aside>
-
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between h-16 px-4">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-white" />
-            </div>
-            <span className="ml-2 text-lg font-bold text-gray-900 dark:text-white">Spendly</span>
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </Button>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 max-h-[calc(100vh-4rem)] overflow-y-auto">
-            <nav className="px-2 py-3 space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path;
-                
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
-                      isActive
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 mr-3" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-                </div>
-              </div>
-              <Button variant="outline" className="w-full" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Đăng xuất
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main content */}
-      <main className="lg:pl-64 pt-16 lg:pt-0">
-        <div className="min-h-screen pb-20 lg:pb-0">
-          <Outlet />
-        </div>
-      </main>
-
-      {/* Mobile bottom nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40">
-        <nav className="flex justify-around py-2">
-          {[navItems[0], navItems[6], navItems[7], navItems[10], navItems[11]].map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center justify-center px-3 py-2 text-xs ${
-                  isActive
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                <Icon className="w-5 h-5 mb-1" />
-                <span className="truncate max-w-[60px]">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
       </div>
     </div>
   );

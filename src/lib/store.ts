@@ -34,6 +34,18 @@ const getStoredToken = () => {
   }
 };
 
+const getStoredUser = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('spendly_user');
+      return stored ? JSON.parse(stored) : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 const getStoredTheme = () => {
   try {
     return typeof window !== 'undefined' ? (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system' : 'system';
@@ -43,12 +55,25 @@ const getStoredTheme = () => {
 };
 
 export const useStore = create<AppState>((set) => ({
-  user: null,
+  user: getStoredUser(),
   accessToken: getStoredToken(),
   currentMonth: new Date().toISOString().slice(0, 7),
   theme: getStoredTheme(),
   familyGroup: null,
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    try {
+      if (typeof window !== 'undefined') {
+        if (user) {
+          localStorage.setItem('spendly_user', JSON.stringify(user));
+        } else {
+          localStorage.removeItem('spendly_user');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to persist user:', error);
+    }
+    set({ user });
+  },
   setAccessToken: (token) => {
     try {
       if (typeof window !== 'undefined') {
@@ -79,6 +104,7 @@ export const useStore = create<AppState>((set) => ({
     try {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
+        localStorage.removeItem('spendly_user');
       }
     } catch (error) {
       console.error('Failed to access localStorage:', error);

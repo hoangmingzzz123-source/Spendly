@@ -48,7 +48,7 @@ export function Categories() {
     e.preventDefault();
     createMutation.mutate({
       ...formData,
-      parentId: formData.parentId || null,
+      parentId: formData.parentId && formData.parentId !== '__none__' ? formData.parentId : null,
     });
   };
 
@@ -181,7 +181,7 @@ export function Categories() {
                     <SelectValue placeholder="Không có" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Không có</SelectItem>
+                    <SelectItem value="__none__">Không có</SelectItem>
                     {categories
                       .filter((c: any) => c.type === formData.type && !c.parentId)
                       .map((c: any) => (

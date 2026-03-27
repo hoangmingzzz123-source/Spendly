@@ -89,9 +89,5 @@
     "overrides": {
       "vite": "6.3.5"
     }
-  },
-  "engines": {
-    "node": "20.x"
-  },
-  "packageManager": "pnpm@8.15.0"
+  }
 }
