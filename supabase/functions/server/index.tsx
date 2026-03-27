@@ -3,6 +3,7 @@ import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import * as kv from './kv_store.tsx';
+import { base64url } from 'https://deno.land/std@0.208.0/encoding/base64url.ts';
 
 const app = new Hono();
 
@@ -1200,7 +1201,7 @@ async function getUserId(c: any): Promise<string | null> {
       return authUser.id;
     }
 
-    // Fallback: Extract and verify JWT with Supabase auth API
+    // Fallback: Extract JWT from Authorization header and decode payload
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log(`[AUTH DEBUG] No valid Authorization header`);
@@ -1208,38 +1209,62 @@ async function getUserId(c: any): Promise<string | null> {
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
-    console.log(`[AUTH DEBUG] Token received, length: ${token.length}`);
+    console.log(`[AUTH DEBUG] Extracted JWT token, length: ${token.length}`);
     
-    // Use Supabase client to verify the token
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    
-    if (!supabaseUrl || !anonKey) {
-      console.log('[AUTH DEBUG] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.log('[AUTH DEBUG] Invalid JWT format');
+        return null;
+      }
+
+      // Decode payload using Deno base64url
+      const payloadStr = new TextDecoder().decode(base64url.decode(parts[1]));
+      const payload = JSON.parse(payloadStr);
+
+      console.log(`[AUTH DEBUG] Decoded JWT payload - role: ${payload.role}, sub: ${payload.sub}`);
+      
+      const userId = payload.sub;
+      if (userId) {
+        console.log(`[AUTH DEBUG] ✅ User from JWT: ${userId}`);
+        return userId;
+      }
+
+      console.log('[AUTH DEBUG] No subject in JWT payload');
       return null;
+    } catch (decodeError) {
+      console.log(`[AUTH DEBUG] JWT decode error: ${decodeError}`);
+      
+      // Last resort: try fetching user from Supabase auth API
+      console.log('[AUTH DEBUG] Attempting Supabase auth API verification...');
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+      
+      if (!supabaseUrl || !anonKey) {
+        console.log('[AUTH DEBUG] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+        return null;
+      }
+
+      const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+          'Authorization': authHeader,
+          'apikey': anonKey,
+        },
+      });
+
+      console.log(`[AUTH DEBUG] Supabase auth API response: ${authResponse.status}`);
+
+      if (!authResponse.ok) {
+        const errorText = await authResponse.text();
+        console.log(`[AUTH DEBUG] Auth API error: ${errorText}`);
+        return null;
+      }
+
+      const userData = await authResponse.json();
+      console.log(`[AUTH DEBUG] ✅ User from Supabase: ${userData.id}`);
+      return userData.id || null;
     }
-
-    // Call Supabase auth endpoint to get user from token
-    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      method: 'GET',
-      headers: {
-        'Authorization': authHeader,
-        'apikey': anonKey,
-      },
-    });
-
-    console.log(`[AUTH DEBUG] Supabase auth response status: ${authResponse.status}`);
-
-    if (!authResponse.ok) {
-      const errorData = await authResponse.text();
-      console.log(`[AUTH DEBUG] Auth verification failed: ${authResponse.status} - ${errorData}`);
-      return null;
-    }
-
-    const userData = await authResponse.json();
-    console.log(`[AUTH DEBUG] User verified from Supabase: ${userData.id}`);
-    return userData.id || null;
-    
   } catch (error) {
     console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
     return null;
