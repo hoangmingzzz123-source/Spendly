@@ -48,9 +48,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token || publicAnonKey}`;
     console.log('[API] 🔑 Auth endpoint');
   } else if (token) {
-    // Add token as query parameter for protected endpoints
-    url += `${separator}token=${encodeURIComponent(token)}`;
-    console.log('[API] ✅ Token sent via query parameter');
+    // Only send token via Authorization header for protected endpoints
+    headers['Authorization'] = `Bearer ${token}`;
+    console.log('[API] ✅ Token sent via Authorization header');
   } else {
     headers['Authorization'] = `Bearer ${publicAnonKey}`;
     console.log('[API] ⚠️  No user token');
