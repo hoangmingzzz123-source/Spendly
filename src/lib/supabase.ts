@@ -9,64 +9,50 @@ export const supabase = createClient(
 export const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-f5f5b39c`;
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  let token: string | null = null;
-  let sessionToken: string | null = null;
-
-  try {
-    const {
-      data: { session }
-    } = await supabase.auth.getSession();
-    sessionToken = session?.access_token ?? null;
-  } catch (error) {
-    console.warn('[API] Failed to read session:', error);
-  }
-
+  let token = null;
   try {
     if (typeof window !== 'undefined') {
-      const localToken = localStorage.getItem('access_token');
-      token = sessionToken || localToken;
+      token = localStorage.getItem('access_token');
     }
   } catch (error) {
     console.error('[API] Failed to access localStorage:', error);
   }
   
+  // Skip auth endpoints (login, register)
   const isAuthEndpoint = endpoint.startsWith('/auth/');
   
-  console.log(`[API] 📤 ${endpoint} - token: ${token ? 'yes' : 'no'}`);
+  // Debug logging - always log in development
+  console.log(`[API] 📤 Request to: ${endpoint}, has access_token: ${!!token}`);
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'apikey': publicAnonKey,
     ...options.headers as Record<string, string>,
   };
   
-  // Build URL with token in query param (since Supabase strips custom headers)
-  let url = `${API_BASE}${endpoint}`;
-  const separator = endpoint.includes('?') ? '&' : '?';
-  
-  if (isAuthEndpoint) {
-    headers['Authorization'] = `Bearer ${token || publicAnonKey}`;
-    console.log('[API] 🔑 Auth endpoint');
-  } else if (token) {
-    // Only send token via Authorization header for protected endpoints
+  // ✅ FIX: Always send Authorization header (even for non-auth endpoints without token)
+  // This matches original behavior and prevents "Missing authorization header" error
+  if (token) {
+    // User is authenticated - use their access token
     headers['Authorization'] = `Bearer ${token}`;
-    console.log('[API] ✅ Token sent via Authorization header');
-  } else {
+    console.log('[API] ✅ Using access_token');
+  } else if (!isAuthEndpoint) {
+    // User not authenticated but endpoint requires auth - use publicAnonKey as fallback
+    // Server will respond with "Invalid JWT token" instead of "Missing header"
     headers['Authorization'] = `Bearer ${publicAnonKey}`;
-    console.log('[API] ⚠️  No user token');
+    console.log('[API] ⚠️ Using publicAnonKey fallback (will get Invalid JWT error)');
   }
   
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    console.error(`[API] ❌ ${response.status} ${endpoint}`, error);
+    console.error(`[API] ❌ Request FAILED: ${response.status} for ${endpoint}`, error);
     throw new Error(error.error || 'Request failed');
   }
 
-  console.log(`[API] ✅ ${endpoint}`);
+  console.log(`[API] ✅ Request SUCCESS: ${endpoint}`);
   return response.json();
 }

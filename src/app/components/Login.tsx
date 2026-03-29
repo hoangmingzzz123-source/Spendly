@@ -21,33 +21,20 @@ export function Login() {
     setLoading(true);
 
     try {
-      console.log('[LOGIN] Starting login attempt...');
       const response = await authApi.login({ email, password });
-      console.log('[LOGIN] Server response:', response);
-      console.log('[LOGIN] response.data:', response.data);
-      console.log('[LOGIN] response.data?.session:', response.data?.session);
-      console.log('[LOGIN] response.data?.session?.access_token:', response.data?.session?.access_token);
       
-      if (response.data?.session?.access_token) {
-        console.log('[LOGIN] Setting access token...');
+      if (response.data?.session) {
         setAccessToken(response.data.session.access_token);
-        console.log('[LOGIN] Token set, checking localStorage:', localStorage.getItem('access_token'));
-        
         setUser({
           id: response.data.user.id,
           email: response.data.user.email,
           name: response.data.user.user_metadata?.name || email,
         });
         
-        console.log('[LOGIN] Login successful, navigating to home');
         toast.success('Chào mừng bạn trở lại!');
         navigate('/');
-      } else {
-        console.error('[LOGIN] No session token in response');
-        toast.error('Phản hồi đăng nhập không hợp lệ');
       }
     } catch (error: any) {
-      console.error('[LOGIN] Login error:', error);
       toast.error(error.message || 'Đăng nhập thất bại');
     } finally {
       setLoading(false);

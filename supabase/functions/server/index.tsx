@@ -10,7 +10,7 @@ const app = new Hono();
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'apikey'],
+  allowHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use('*', logger(console.log));
 
@@ -18,16 +18,7 @@ app.use('*', logger(console.log));
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-  {
-    global: {
-      headers: {
-        Authorization: req.headers.get('Authorization')!,
-      },
-    },
-  }
 );
-
-
 
 // ========== AUTH ROUTES ==========
 app.post('/make-server-f5f5b39c/auth/register', async (c) => {
@@ -1196,131 +1187,40 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 });
 
 // ========== HELPER FUNCTIONS ==========
-
-// Simple base64url decoder with better error handling
-function decodeBase64Url(str: string): string {
-  let output = str.replace(/-/g, '+').replace(/_/g, '/');
-  switch (output.length % 4) {
-    case 2:
-      output += '==';
-      break;
-    case 3:
-      output += '=';
-      break;
-  }
-  try {
-    const decoded = atob(output);
-    // Properly handle UTF-8
-    const bytes = new Uint8Array(decoded.length);
-    for (let i = 0; i < decoded.length; i++) {
-      bytes[i] = decoded.charCodeAt(i);
-    }
-    return new TextDecoder().decode(bytes);
-  } catch (e) {
-    console.error('[BASE64] Decode error for string of length', str.length, ':', e);
-    throw new Error(`Base64 decode failed: ${e}`);
-  }
-}
-
 async function getUserId(c: any): Promise<string | null> {
   try {
-    // Method 1: Check context
-    const authUser = c.get('user');
-    if (authUser?.id) {
-      console.log(`[AUTH] ✅ From context: ${authUser.id.slice(0, 8)}...`);
-      return authUser.id;
-    }
-
-    // Method 2: Extract token from URL (simpler, more reliable)
-    let token: string | null = null;
-    let source = '';
+    const authHeader = c.req.header('Authorization');
+    console.log(`[AUTH DEBUG] Authorization header present: ${!!authHeader}`);
     
-    // Get the full URL as string
-    const urlString = c.req.url || '';
-    console.log(`[AUTH] URL: ${urlString.slice(0, 100)}...`);
-    
-    // Parse query string manually (most reliable)
-    const questionIndex = urlString.indexOf('?');
-    if (questionIndex !== -1) {
-      const queryString = urlString.substring(questionIndex + 1);
-      console.log(`[AUTH] Query string length: ${queryString.length}`);
-      
-      // Find token parameter
-      const rows = queryString.split('&');
-      for (const row of rows) {
-        const [key, ...valueParts] = row.split('=');
-        if (key === 'token' && valueParts.length > 0) {
-          token = valueParts.join('='); // Handle = signs in value
-          source = 'URL query string parse';
-          console.log(`[AUTH] ✅ Found token parameter: ${token.length} chars`);
-          break;
-        }
-      }
-    }
-
-    // Fallback: try Hono's query method
-    if (!token) {
-      try {
-        const honoToken = c.req.query('token');
-        if (honoToken) {
-          token = honoToken;
-          source = 'c.req.query()';
-          console.log(`[AUTH] Found via c.req.query()`);
-        }
-      } catch (e) {
-        console.log(`[AUTH] c.req.query() error:`, e);
-      }
-    }
-
-    // Last resort: check headers
-    if (!token) {
-      const authHeader = c.req.header('Authorization') || c.req.header('authorization') || '';
-      if (authHeader.startsWith('Bearer ')) {
-        token = authHeader.replace('Bearer ', '').trim();
-        source = 'Authorization header';
-      }
-    }
-
-    if (!token) {
-      console.log(`[AUTH] ❌ Missing authorization header`);
+    if (!authHeader) {
+      console.log(`[AUTH DEBUG] No Authorization header`);
       return null;
     }
-
-    console.log(`[AUTH] Token source: ${source}`);
     
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        console.log(`[AUTH] ❌ Invalid JWT: ${parts.length} parts`);
-        return null;
-      }
-
-      const payloadStr = decodeBase64Url(parts[1]);
-      const payload = JSON.parse(payloadStr);
-
-      console.log(`[AUTH] ✅ JWT decoded: role=${payload.role}, sub=${payload.sub?.slice(0, 8)}`);
-      
-      // Check expiration
-      const now = Math.floor(Date.now() / 1000);
-      if (payload.exp && payload.exp < now) {
-        console.log(`[AUTH] ❌ Token expired: ${payload.exp} < ${now}`);
-        return null;
-      }
-      
-      const userId = payload.sub;
-      if (!userId) {
-        console.log(`[AUTH] ❌ No subject in JWT`);
-        return null;
-      }
-
-      console.log(`[AUTH] ✅ Authenticated user: ${userId.slice(0, 8)}`);
-      return userId;
-    } catch (decodeError) {
-      console.log(`[AUTH] ❌ JWT decode error: ${decodeError}`);
+    const accessToken = authHeader.split(' ')[1];
+    if (!accessToken) {
+      console.log(`[AUTH DEBUG] No token in Authorization header`);
       return null;
     }
+    
+    console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
+    
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (error) {
+      console.log(`[AUTH DEBUG] getUser error: ${error.message}`);
+      return null;
+    }
+    
+    if (!user) {
+      console.log(`[AUTH DEBUG] No user found for token`);
+      return null;
+    }
+    
+    console.log(`[AUTH DEBUG] User authenticated: ${user.id}`);
+    return user.id;
   } catch (error) {
-    console.log(`[AUTH] ❌ Unexpected error: ${error}`);
+    console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
     return null;
   }
 }
