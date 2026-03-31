@@ -47,9 +47,26 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     headers,
   });
 
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    let error = { error: 'Request failed' };
+    try {
+      error = await response.json();
+    } catch {}
     console.error(`[API] ❌ Request FAILED: ${response.status} for ${endpoint}`, error);
+
+    // Nếu token hết hạn hoặc lỗi xác thực, redirect về login
+    if (
+      response.status === 401 ||
+      (typeof error.error === 'string' &&
+        (error.error.toLowerCase().includes('jwt') ||
+         error.error.toLowerCase().includes('token')))
+    ) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+      }
+    }
     throw new Error(error.error || 'Request failed');
   }
 
