@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Bill, Participant, Item, ItemShare, Payment, Settlement, PaymentTransaction } from './types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const billSupabaseApi = {
