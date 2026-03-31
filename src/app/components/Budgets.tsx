@@ -244,29 +244,12 @@ export function Budgets() {
                   <Label htmlFor="amount">Số tiền (VNĐ)</Label>
                   <Input
                     id="amount"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    placeholder="1.000.000"
-                    value={formatCurrencyInput(formData.amount)}
-                    onChange={handleAmountInput}
+                    type="number"
+                    placeholder="5000000"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   />
                 </div>
-                // Format input tiền thành dạng xxx.xxx.xxx
-                function formatCurrencyInput(value: string) {
-                  if (!value) return '';
-                  // Xóa ký tự không phải số
-                  const raw = value.replace(/\D/g, '');
-                  // Format lại
-                  return raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                }
-
-                // Xử lý khi nhập input tiền
-                function handleAmountInput(e: React.ChangeEvent<HTMLInputElement>) {
-                  // Chỉ lưu số vào state
-                  const raw = e.target.value.replace(/\D/g, '');
-                  setFormData((prev) => ({ ...prev, amount: raw }));
-                }
                 <div className="space-y-2">
                   <Label htmlFor="period">Kỳ hạn</Label>
                   <Select
@@ -363,7 +346,7 @@ export function Budgets() {
                         <AvatarFallback>
                           {category?.icon
                             ? category.icon
-                            : (category?.name ? category.name.charAt(0).toUpperCase() : randomBudgetIcon(budget.id))}
+                            : (category?.name ? category.name.charAt(0).toUpperCase() : '💰')}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -380,16 +363,6 @@ export function Budgets() {
                       </Button>
                     </div>
                   </div>
-                // Hàm random icon cho budget nếu không có icon và không có tên
-                const BUDGET_ICONS = ['💰', '🏦', '🪙', '📈', '🛒', '🍔', '🚗', '🎁', '🏠', '🎉', '🧾', '🛠️', '🧃', '🧸', '🎓'];
-                function randomBudgetIcon(seed: string) {
-                  let hash = 0;
-                  for (let i = 0; i < seed.length; i++) {
-                    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-                  }
-                  const idx = Math.abs(hash) % BUDGET_ICONS.length;
-                  return BUDGET_ICONS[idx];
-                }
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
