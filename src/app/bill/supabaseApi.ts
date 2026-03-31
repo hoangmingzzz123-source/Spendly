@@ -1,10 +1,8 @@
 // Supabase API cho Bill Splitting
 import { createClient } from '@supabase/supabase-js';
 import { Bill, Participant, Item, ItemShare, Payment, Settlement, PaymentTransaction } from './types';
+import { supabase } from '../../lib/supabase';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const billSupabaseApi = {
   // Bill
