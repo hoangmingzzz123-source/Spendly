@@ -19,6 +19,7 @@ import { OCRScanner } from './components/OCRScanner';
 import { Help } from './components/Help';
 import { Settings } from './components/Settings';
 import { NotFound } from './components/NotFound';
+import BillPage from './bill';
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { path: 'ocr', Component: OCRScanner },
       { path: 'help', Component: Help },
       { path: 'settings', Component: Settings },
+      { path: 'bill', Component: BillPage },
     ],
   },
   { path: '/login', Component: Login },
