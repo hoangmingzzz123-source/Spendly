@@ -31,10 +31,16 @@ function LoadingScreen() {
   );
 }
 
-export default function App() {
+
+function RemindersNotificationWrapper() {
   useGlobalRemindersNotification();
+  return null;
+}
+
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <RemindersNotificationWrapper />
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <RouterProvider router={router} fallbackElement={<LoadingScreen />} />
         <Toaster position="top-center" richColors />
