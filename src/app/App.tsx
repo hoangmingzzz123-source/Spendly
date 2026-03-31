@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
+import { useGlobalRemindersNotification } from './hooks/useGlobalRemindersNotification';
 import { Loader2 } from 'lucide-react';
 
 export const queryClient = new QueryClient({
@@ -31,6 +32,7 @@ function LoadingScreen() {
 }
 
 export default function App() {
+  useGlobalRemindersNotification();
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
