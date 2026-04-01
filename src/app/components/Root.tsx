@@ -23,6 +23,7 @@ import {
   X,
   BarChart3,
   Scan,
+  ReceiptText,
   ChevronRight
 } from 'lucide-react';
 
@@ -90,6 +91,7 @@ export function Root() {
       items: [
         { path: '/chat', label: 'AI Chat', icon: Bot },
         { path: '/ocr', label: 'Quét bill', icon: Scan },
+        { path: '/bill', label: 'Chia bill', icon: ReceiptText },
         { path: '/family', label: 'Gia đình', icon: Users },
         { path: '/settings', label: 'Cài đặt', icon: SettingsIcon },
       ],
