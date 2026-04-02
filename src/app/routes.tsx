@@ -20,6 +20,7 @@ import { Help } from './components/Help';
 import { Settings } from './components/Settings';
 import { BillSplit } from './components/BillSplit';
 import { NotFound } from './components/NotFound';
+import BillPage from './bill';
 
 export const router = createBrowserRouter([
   {

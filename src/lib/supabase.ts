@@ -62,6 +62,7 @@ export async function apiRequest(
     },
   });
 
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
     console.error(`[API] ❌ ${response.status} ${endpoint}`, error);
