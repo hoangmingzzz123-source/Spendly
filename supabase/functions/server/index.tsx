@@ -1548,7 +1548,7 @@ async function getUserId(c: any): Promise<string | null> {
       // Fallback: use Supabase client with ANON_KEY
       const userClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
       
       const { data: { user }, error } = await userClient.auth.getUser(accessToken);
