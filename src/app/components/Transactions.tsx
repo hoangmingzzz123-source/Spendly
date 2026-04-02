@@ -265,45 +265,48 @@ export function Transactions() {
             {transactions.map((transaction: any) => {
               const category = categoryMap.get(transaction.categoryId);
               const account = accountMap.get(transaction.accountId);
+              
               return (
                 <div
                   key={transaction.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-900"
+                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center gap-3 sm:gap-4 w-full">
-                    <div
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white shrink-0"
+                  <div className="flex items-center gap-4 flex-1">
+                    <div 
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-white"
                       style={{ backgroundColor: category?.color || '#6B7280' }}
                     >
                       {transaction.type === 'INCOME' ? (
-                        <ArrowUpCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <ArrowUpCircle className="w-6 h-6" />
                       ) : (
-                        <ArrowDownCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <ArrowDownCircle className="w-6 h-6" />
                       )}
                     </div>
+                    
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                        <h3 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white truncate">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
                           {category?.name || 'Unknown'}
                         </h3>
-                        <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400 mt-1 sm:mt-0">
+                        <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400">
                           {account?.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                         <CalendarIcon className="w-4 h-4" />
                         <span>
                           {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: vi })}
                         </span>
                       </div>
                       {transaction.note && (
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
                           {transaction.note}
                         </p>
                       )}
                     </div>
-                    <div className="text-right min-w-[90px]">
-                      <p className={`text-base sm:text-lg font-bold ${
+
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${
                         transaction.type === 'INCOME'
                           ? 'text-green-600 dark:text-green-400'
                           : 'text-red-600 dark:text-red-400'
@@ -312,18 +315,20 @@ export function Transactions() {
                         {formatCurrency(transaction.amount)}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(transaction.id)}
-                      className="ml-1 sm:ml-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(transaction.id)}
+                    className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               );
             })}
+
             {transactions.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12">
                 <ArrowUpCircle className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />

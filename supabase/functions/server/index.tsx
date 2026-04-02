@@ -1186,6 +1186,340 @@ app.get('/make-server-f5f5b39c/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ========== BILL SPLITTING ROUTES ==========
+
+app.get('/make-server-f5f5b39c/bills', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const bills = await kv.getByPrefix(`bill:${userId}:`);
+    const sorted = bills.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return c.json({ data: sorted });
+  } catch (error) {
+    console.log(`Get bills error: ${error}`);
+    return c.json({ error: 'Failed to get bills' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const body = await c.req.json();
+    const { name, date } = body;
+    if (!name) return c.json({ error: 'Name is required' }, 400);
+    const billId = crypto.randomUUID();
+    const bill = {
+      id: billId, userId, name, date: date || new Date().toISOString().split('T')[0],
+      status: 'PENDING', participants: [], items: [], payments: [],
+      settlements: [], transactions: [], totalAmount: 0, createdAt: new Date().toISOString(),
+    };
+    await kv.set(`bill:${userId}:${billId}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Create bill error: ${error}`);
+    return c.json({ error: 'Failed to create bill' }, 500);
+  }
+});
+
+app.get('/make-server-f5f5b39c/bills/:id', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Get bill error: ${error}`);
+    return c.json({ error: 'Failed to get bill' }, 500);
+  }
+});
+
+app.put('/make-server-f5f5b39c/bills/:id', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    const body = await c.req.json();
+    const updated = { ...bill, ...body, updatedAt: new Date().toISOString() };
+    await kv.set(`bill:${userId}:${id}`, updated);
+    return c.json({ data: updated });
+  } catch (error) {
+    console.log(`Update bill error: ${error}`);
+    return c.json({ error: 'Failed to update bill' }, 500);
+  }
+});
+
+app.delete('/make-server-f5f5b39c/bills/:id', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    await kv.del(`bill:${userId}:${id}`);
+    return c.json({ data: { success: true } });
+  } catch (error) {
+    console.log(`Delete bill error: ${error}`);
+    return c.json({ error: 'Failed to delete bill' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills/:id/participants', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    const { name } = await c.req.json();
+    if (!name) return c.json({ error: 'Name is required' }, 400);
+    bill.participants.push({ id: crypto.randomUUID(), name });
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${id}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Add participant error: ${error}`);
+    return c.json({ error: 'Failed to add participant' }, 500);
+  }
+});
+
+app.delete('/make-server-f5f5b39c/bills/:id/participants/:pid', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const pid = c.req.param('pid');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    bill.participants = bill.participants.filter((p: any) => p.id !== pid);
+    bill.items.forEach((item: any) => { item.shares = (item.shares || []).filter((s: any) => s !== pid); });
+    bill.payments = (bill.payments || []).filter((p: any) => p.participantId !== pid);
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${id}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Delete participant error: ${error}`);
+    return c.json({ error: 'Failed to delete participant' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills/:id/items', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    const { name, price } = await c.req.json();
+    if (!name || price === undefined) return c.json({ error: 'Name and price required' }, 400);
+    bill.items.push({ id: crypto.randomUUID(), name, price: parseFloat(price), shares: [] });
+    bill.totalAmount = bill.items.reduce((s: number, i: any) => s + i.price, 0);
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${id}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Add item error: ${error}`);
+    return c.json({ error: 'Failed to add item' }, 500);
+  }
+});
+
+app.put('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const billId = c.req.param('billId');
+    const itemId = c.req.param('itemId');
+    const bill = await kv.get(`bill:${userId}:${billId}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    const body = await c.req.json();
+    const idx = bill.items.findIndex((i: any) => i.id === itemId);
+    if (idx === -1) return c.json({ error: 'Item not found' }, 404);
+    bill.items[idx] = { ...bill.items[idx], ...body };
+    if (body.price !== undefined) bill.items[idx].price = parseFloat(body.price);
+    bill.totalAmount = bill.items.reduce((s: number, i: any) => s + i.price, 0);
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${billId}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Update item error: ${error}`);
+    return c.json({ error: 'Failed to update item' }, 500);
+  }
+});
+
+app.delete('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const billId = c.req.param('billId');
+    const itemId = c.req.param('itemId');
+    const bill = await kv.get(`bill:${userId}:${billId}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    bill.items = bill.items.filter((i: any) => i.id !== itemId);
+    bill.totalAmount = bill.items.reduce((s: number, i: any) => s + i.price, 0);
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${billId}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Delete item error: ${error}`);
+    return c.json({ error: 'Failed to delete item' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills/:billId/items/:itemId/shares', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const billId = c.req.param('billId');
+    const itemId = c.req.param('itemId');
+    const bill = await kv.get(`bill:${userId}:${billId}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    const { participantIds } = await c.req.json();
+    const idx = bill.items.findIndex((i: any) => i.id === itemId);
+    if (idx === -1) return c.json({ error: 'Item not found' }, 404);
+    bill.items[idx].shares = participantIds || [];
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${billId}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Update shares error: ${error}`);
+    return c.json({ error: 'Failed to update shares' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills/:id/payments', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
+    const { payments } = await c.req.json();
+    bill.payments = payments.map((p: any) => ({ id: crypto.randomUUID(), participantId: p.participantId, amount: parseFloat(p.amount) }));
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${id}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Set payments error: ${error}`);
+    return c.json({ error: 'Failed to set payments' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills/:id/split', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+
+    const owes: Record<string, number> = {};
+    bill.participants.forEach((p: any) => { owes[p.id] = 0; });
+    bill.items.forEach((item: any) => {
+      const shares = item.shares || [];
+      if (shares.length === 0) return;
+      const perPerson = item.price / shares.length;
+      shares.forEach((pid: string) => { owes[pid] = (owes[pid] || 0) + perPerson; });
+    });
+
+    const balances: Record<string, number> = {};
+    bill.participants.forEach((p: any) => {
+      const paid = (bill.payments || []).filter((pay: any) => pay.participantId === p.id).reduce((s: number, pay: any) => s + pay.amount, 0);
+      balances[p.id] = paid - (owes[p.id] || 0);
+    });
+
+    const debtors = Object.entries(balances).filter(([, b]) => b < -0.01).map(([id, b]) => ({ id, amount: -b })).sort((a, b) => b.amount - a.amount);
+    const creditors = Object.entries(balances).filter(([, b]) => b > 0.01).map(([id, b]) => ({ id, amount: b })).sort((a, b) => b.amount - a.amount);
+
+    const settlements: any[] = [];
+    let di = 0, ci = 0;
+    const d = debtors.map(x => ({ ...x }));
+    const cr = creditors.map(x => ({ ...x }));
+    while (di < d.length && ci < cr.length) {
+      const amount = Math.min(d[di].amount, cr[ci].amount);
+      if (amount > 0.01) {
+        settlements.push({ id: crypto.randomUUID(), fromParticipantId: d[di].id, toParticipantId: cr[ci].id, amount: Math.round(amount) });
+      }
+      d[di].amount -= amount;
+      cr[ci].amount -= amount;
+      if (d[di].amount < 0.01) di++;
+      if (cr[ci].amount < 0.01) ci++;
+    }
+
+    bill.settlements = settlements;
+    bill.owes = owes;
+    bill.balances = balances;
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${id}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Split bill error: ${error}`);
+    return c.json({ error: 'Failed to split bill' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills/:id/transactions', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    const { fromParticipantId, toParticipantId, amount, note } = await c.req.json();
+    if (!fromParticipantId || !toParticipantId || !amount) return c.json({ error: 'Missing required fields' }, 400);
+    if (amount <= 0) return c.json({ error: 'Amount must be positive' }, 400);
+
+    const settlement = (bill.settlements || []).find((s: any) => s.fromParticipantId === fromParticipantId && s.toParticipantId === toParticipantId);
+    if (settlement) {
+      const existingPaid = (bill.transactions || []).filter((t: any) => t.fromParticipantId === fromParticipantId && t.toParticipantId === toParticipantId).reduce((s: number, t: any) => s + t.amount, 0);
+      if (existingPaid + amount > settlement.amount + 0.01) return c.json({ error: 'Payment exceeds debt' }, 400);
+    }
+
+    if (!bill.transactions) bill.transactions = [];
+    bill.transactions.push({ id: crypto.randomUUID(), fromParticipantId, toParticipantId, amount: parseFloat(amount), note: note || '', paymentDate: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
+
+    const allSettled = (bill.settlements || []).every((s: any) => {
+      const paid = bill.transactions.filter((t: any) => t.fromParticipantId === s.fromParticipantId && t.toParticipantId === s.toParticipantId).reduce((sum: number, t: any) => sum + t.amount, 0);
+      return paid >= s.amount - 0.01;
+    });
+    if (allSettled && bill.settlements?.length > 0) bill.status = 'COMPLETED';
+
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${id}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Add transaction error: ${error}`);
+    return c.json({ error: 'Failed to add transaction' }, 500);
+  }
+});
+
+app.post('/make-server-f5f5b39c/bills/:id/complete', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const id = c.req.param('id');
+    const bill = await kv.get(`bill:${userId}:${id}`);
+    if (!bill) return c.json({ error: 'Bill not found' }, 404);
+    bill.status = 'COMPLETED';
+    bill.completedAt = new Date().toISOString();
+    bill.updatedAt = new Date().toISOString();
+    await kv.set(`bill:${userId}:${id}`, bill);
+    return c.json({ data: bill });
+  } catch (error) {
+    console.log(`Complete bill error: ${error}`);
+    return c.json({ error: 'Failed to complete bill' }, 500);
+  }
+});
+
 // ========== HELPER FUNCTIONS ==========
 async function getUserId(c: any): Promise<string | null> {
   try {
@@ -1205,7 +1539,13 @@ async function getUserId(c: any): Promise<string | null> {
     
     console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
     
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    // IMPORTANT: Use a client with ANON_KEY to verify user tokens (not SERVICE_ROLE_KEY)
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    );
+    
+    const { data: { user }, error } = await userClient.auth.getUser(accessToken);
     
     if (error) {
       console.log(`[AUTH DEBUG] getUser error: ${error.message}`);

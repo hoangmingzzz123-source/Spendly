@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router';
 import { useStore } from '../../lib/store';
+import { supabase, setCachedToken } from '../../lib/supabase';
 import { queryClient } from '../App';
 import { Button } from './ui/button';
 import { WelcomeDialog } from './WelcomeDialog';
@@ -23,15 +24,17 @@ import {
   X,
   BarChart3,
   Scan,
-  ChevronRight
+  ChevronRight,
+  Receipt
 } from 'lucide-react';
 
 export function Root() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { accessToken, user, theme, setTheme, logout } = useStore();
+  const { accessToken, user, theme, setTheme, logout, setAccessToken, setUser } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -45,12 +48,42 @@ export function Root() {
   }, [theme]);
 
   useEffect(() => {
-    if (!accessToken) {
+    // Give a brief moment for authentication state to stabilize after login
+    const timer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Sync Supabase session changes (auto token refresh, sign-out) with Zustand
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' && session) {
+        console.log('[Auth] Token auto-refreshed');
+        setCachedToken(session.access_token);
+        setAccessToken(session.access_token);
+        try { localStorage.setItem('access_token', session.access_token); } catch {}
+      } else if (event === 'SIGNED_OUT') {
+        setCachedToken(null);
+        logout();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [setAccessToken, setUser, logout]);
+
+  useEffect(() => {
+    // Only redirect if we're done initializing and truly have no token
+    if (!isInitializing && !accessToken) {
+      console.log('[Root] No access token, redirecting to login');
       navigate('/login');
     }
-  }, [accessToken, navigate]);
+  }, [accessToken, navigate, isInitializing]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Sign out from Supabase (clears their session storage)
+    await supabase.auth.signOut();
+    // Clear cached token
+    setCachedToken(null);
     // Clear React Query cache
     queryClient.clear();
     // Clear Zustand store
@@ -88,6 +121,7 @@ export function Root() {
     {
       label: 'Tiện ích',
       items: [
+        { path: '/bill-split', label: 'Chia bill', icon: Receipt },
         { path: '/chat', label: 'AI Chat', icon: Bot },
         { path: '/ocr', label: 'Quét bill', icon: Scan },
         { path: '/family', label: 'Gia đình', icon: Users },

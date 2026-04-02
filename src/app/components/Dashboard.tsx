@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { dashboardApi, accountsApi } from '../../lib/api';
 import { useStore } from '../../lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -59,8 +60,8 @@ export function Dashboard() {
     return amount.toString();
   };
 
-  const pieChartData = dashboardData?.topCategories?.map((cat: any) => ({
-    name: cat.categoryName,
+  const pieChartData = dashboardData?.topCategories?.map((cat: any, idx: number) => ({
+    name: cat.categoryName || `Category ${idx + 1}`,
     value: cat.amount,
     color: cat.categoryColor,
   })) || [];
@@ -69,20 +70,26 @@ export function Dashboard() {
     ? ((dashboardData.income - dashboardData.expense) / dashboardData.income) * 100 
     : 0;
 
-  const trendData = Array.from({ length: 6 }, (_, i) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - (5 - i));
-    return {
-      key: `month-${i}`,
-      month: `Th${date.getMonth() + 1}`,
-      income: Math.random() * 20000000 + 10000000,
-      expense: Math.random() * 15000000 + 8000000,
-    };
-  });
+  // Generate trend data for last 6 months — use useMemo with stable values to avoid duplicate-key warnings in Recharts
+  const trendData = useMemo(() => {
+    // Stable placeholder values (no Math.random) so data is consistent across renders
+    const placeholderIncomes = [11500000, 13200000, 10800000, 14600000, 12300000, 0];
+    const placeholderExpenses = [8800000, 10200000, 7900000, 11300000, 9100000, 0];
 
-  if (dashboardData) {
-    trendData[5] = { ...trendData[5], income: dashboardData.income, expense: dashboardData.expense };
-  }
+    return Array.from({ length: 6 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - i));
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const isCurrentMonth = i === 5;
+      return {
+        id: `${year}-${String(month).padStart(2, '0')}`,
+        month: `T${month}/${year.toString().slice(-2)}`,
+        income: isCurrentMonth && dashboardData ? dashboardData.income : placeholderIncomes[i],
+        expense: isCurrentMonth && dashboardData ? dashboardData.expense : placeholderExpenses[i],
+      };
+    });
+  }, [dashboardData?.income, dashboardData?.expense]);
 
   const greeting = () => {
     const h = new Date().getHours();

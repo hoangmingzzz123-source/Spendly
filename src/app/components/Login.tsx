@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useStore } from '../../lib/store';
-import { authApi } from '../../lib/api';
+import { supabase, markLoginSuccess, setCachedToken } from '../../lib/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -21,18 +21,29 @@ export function Login() {
     setLoading(true);
 
     try {
-      const response = await authApi.login({ email, password });
-      
-      if (response.data?.session) {
-        setAccessToken(response.data.session.access_token);
+      // Use Supabase client directly — session is managed with auto-refresh
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) throw error;
+
+      if (data.session) {
+        // Mark login success to enable grace period for API calls
+        markLoginSuccess();
+
+        setCachedToken(data.session.access_token);
+        setAccessToken(data.session.access_token);
         setUser({
-          id: response.data.user.id,
-          email: response.data.user.email,
-          name: response.data.user.user_metadata?.name || email,
+          id: data.user.id,
+          email: data.user.email ?? email,
+          name: data.user.user_metadata?.name || email,
         });
-        
+
         toast.success('Chào mừng bạn trở lại!');
-        navigate('/');
+
+        // Small delay to ensure state is fully propagated
+        setTimeout(() => {
+          navigate('/');
+        }, 50);
       }
     } catch (error: any) {
       toast.error(error.message || 'Đăng nhập thất bại');

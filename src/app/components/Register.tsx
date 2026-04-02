@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useStore } from '../../lib/store';
 import { authApi } from '../../lib/api';
+import { supabase, markLoginSuccess, setCachedToken } from '../../lib/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -25,18 +26,28 @@ export function Register() {
       const response = await authApi.register({ name, email, password });
       
       if (response.data?.user) {
-        const loginResponse = await authApi.login({ email, password });
-        
-        if (loginResponse.data?.session) {
-          setAccessToken(loginResponse.data.session.access_token);
+        // Use Supabase client directly after registration — session is managed with auto-refresh
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        if (data.session) {
+          // Mark login success to enable grace period for API calls
+          markLoginSuccess();
+
+          setCachedToken(data.session.access_token);
+          setAccessToken(data.session.access_token);
           setUser({
-            id: loginResponse.data.user.id,
-            email: loginResponse.data.user.email,
-            name: loginResponse.data.user.user_metadata?.name || name,
+            id: data.user.id,
+            email: data.user.email ?? email,
+            name: data.user.user_metadata?.name || name,
           });
-          
+
           toast.success('Chào mừng bạn đến với Spendly!');
-          navigate('/');
+
+          // Small delay to ensure state is fully propagated
+          setTimeout(() => {
+            navigate('/');
+          }, 50);
         }
       }
     } catch (error: any) {
