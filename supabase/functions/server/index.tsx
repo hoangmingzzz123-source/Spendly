@@ -2,6 +2,7 @@ import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import * as jwt from 'npm:jsonwebtoken@9';
 import * as kv from './kv_store.tsx';
 
 const app = new Hono();
@@ -1539,26 +1540,42 @@ async function getUserId(c: any): Promise<string | null> {
     
     console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
     
-    // IMPORTANT: Use a client with ANON_KEY to verify user tokens (not SERVICE_ROLE_KEY)
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    );
+    // Get JWT secret from Supabase anon key or use direct verification
+    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
     
-    const { data: { user }, error } = await userClient.auth.getUser(accessToken);
-    
-    if (error) {
-      console.log(`[AUTH DEBUG] getUser error: ${error.message}`);
-      return null;
+    if (!jwtSecret) {
+      console.log(`[AUTH DEBUG] SUPABASE_JWT_SECRET not set, trying getUser method...`);
+      // Fallback: use Supabase client with ANON_KEY
+      const userClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      );
+      
+      const { data: { user }, error } = await userClient.auth.getUser(accessToken);
+      
+      if (error) {
+        console.log(`[AUTH DEBUG] getUser error: ${error.message}`);
+        return null;
+      }
+      
+      if (!user) {
+        console.log(`[AUTH DEBUG] No user found for token`);
+        return null;
+      }
+      
+      console.log(`[AUTH DEBUG] User authenticated: ${user.id}`);
+      return user.id;
     }
     
-    if (!user) {
-      console.log(`[AUTH DEBUG] No user found for token`);
+    // Verify JWT with secret
+    try {
+      const decoded = jwt.verify(accessToken, jwtSecret) as any;
+      console.log(`[AUTH DEBUG] JWT verified, user: ${decoded.sub}`);
+      return decoded.sub; // sub is the user ID in Supabase JWTs
+    } catch (jwtError: any) {
+      console.log(`[AUTH DEBUG] JWT verification failed: ${jwtError.message}`);
       return null;
     }
-    
-    console.log(`[AUTH DEBUG] User authenticated: ${user.id}`);
-    return user.id;
   } catch (error) {
     console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
     return null;
