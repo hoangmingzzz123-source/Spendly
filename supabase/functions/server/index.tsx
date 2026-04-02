@@ -2,7 +2,6 @@ import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import * as jwt from 'npm:jsonwebtoken@9';
 import * as kv from './kv_store.tsx';
 
 const app = new Hono();
@@ -80,10 +79,71 @@ app.post('/make-server-f5f5b39c/auth/login', async (c) => {
   }
 });
 
+// ========== DEBUG ENDPOINTS ==========
+app.get('/make-server-f5f5b39c/debug/env', async (c) => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const hasAnonKey = !!Deno.env.get('SUPABASE_ANON_KEY');
+  const hasServiceKey = !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  
+  return c.json({
+    supabaseUrl,
+    hasAnonKey,
+    hasServiceKey,
+    anonKeyPrefix: hasAnonKey ? Deno.env.get('SUPABASE_ANON_KEY')?.substring(0, 30) + '...' : 'MISSING',
+  });
+});
+
+app.get('/make-server-f5f5b39c/debug/token', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  
+  if (!authHeader) {
+    return c.json({ error: 'No Authorization header' }, 401);
+  }
+  
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return c.json({ error: 'No token in Authorization header' }, 401);
+  }
+  
+  console.log(`[DEBUG] Token length: ${token.length}, prefix: ${token.substring(0, 30)}...`);
+  
+  const userClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+  );
+  
+  const { data: { user }, error } = await userClient.auth.getUser(token);
+  
+  if (error) {
+    console.error(`[DEBUG] Token validation FAILED:`, error);
+    return c.json({
+      error: 'Token validation failed',
+      debug: {
+        errorMessage: error.message,
+        errorStatus: error.status,
+        errorName: error.name,
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 30) + '...',
+      }
+    }, 401);
+  }
+  
+  if (!user) {
+    return c.json({ error: 'No user found' }, 401);
+  }
+  
+  return c.json({
+    success: true,
+    userId: user.id,
+    userEmail: user.email,
+    tokenPrefix: token.substring(0, 30) + '...',
+  });
+});
+
 // ========== ACCOUNTS ROUTES ==========
 app.get('/make-server-f5f5b39c/accounts', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const accounts = await kv.getByPrefix(`account:${userId}:`);
@@ -95,8 +155,8 @@ app.get('/make-server-f5f5b39c/accounts', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/accounts', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -1522,64 +1582,55 @@ app.post('/make-server-f5f5b39c/bills/:id/complete', async (c) => {
 });
 
 // ========== HELPER FUNCTIONS ==========
-async function getUserId(c: any): Promise<string | null> {
+async function getUserId(c: any): Promise<{ userId: string | null; error?: string }> {
   try {
     const authHeader = c.req.header('Authorization');
     console.log(`[AUTH DEBUG] Authorization header present: ${!!authHeader}`);
     
     if (!authHeader) {
       console.log(`[AUTH DEBUG] No Authorization header`);
-      return null;
+      return { userId: null, error: 'No Authorization header' };
     }
     
     const accessToken = authHeader.split(' ')[1];
     if (!accessToken) {
       console.log(`[AUTH DEBUG] No token in Authorization header`);
-      return null;
+      return { userId: null, error: 'No token in Authorization header' };
     }
     
     console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
     
-    // Get JWT secret from Supabase anon key or use direct verification
-    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
+    // IMPORTANT: Use a client with ANON_KEY to verify user tokens (not SERVICE_ROLE_KEY)
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    );
     
-    if (!jwtSecret) {
-      console.log(`[AUTH DEBUG] SUPABASE_JWT_SECRET not set, trying getUser method...`);
-      // Fallback: use Supabase client with ANON_KEY
-      const userClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      );
-      
-      const { data: { user }, error } = await userClient.auth.getUser(accessToken);
-      
-      if (error) {
-        console.log(`[AUTH DEBUG] getUser error: ${error.message}`);
-        return null;
-      }
-      
-      if (!user) {
-        console.log(`[AUTH DEBUG] No user found for token`);
-        return null;
-      }
-      
-      console.log(`[AUTH DEBUG] User authenticated: ${user.id}`);
-      return user.id;
+    const { data: { user }, error } = await userClient.auth.getUser(accessToken);
+    
+    if (error) {
+      console.error(`[AUTH DEBUG] ❌ getUser error: ${error.message}, status: ${error.status}, name: ${error.name}`);
+      console.error(`[AUTH DEBUG] Full error:`, JSON.stringify(error, null, 2));
+      return { userId: null, error: `Invalid JWT: ${error.message}` };
     }
     
-    // Verify JWT with secret
-    try {
-      const decoded = jwt.verify(accessToken, jwtSecret) as any;
-      console.log(`[AUTH DEBUG] JWT verified, user: ${decoded.sub}`);
-      return decoded.sub; // sub is the user ID in Supabase JWTs
-    } catch (jwtError: any) {
-      console.log(`[AUTH DEBUG] JWT verification failed: ${jwtError.message}`);
-      return null;
+    if (!user) {
+      console.log(`[AUTH DEBUG] No user found for token`);
+      return { userId: null, error: 'No user found for token' };
     }
+    
+    console.log(`[AUTH DEBUG] ✅ User authenticated: ${user.id}`);
+    return { userId: user.id };
   } catch (error) {
-    console.log(`[AUTH DEBUG] Exception in getUserId: ${error}`);
-    return null;
+    console.error(`[AUTH DEBUG] ❌ Exception in getUserId:`, error);
+    return { userId: null, error: `Auth exception: ${error}` };
   }
+}
+
+// Helper to ensure backwards compatibility with old code
+async function requireAuth(c: any): Promise<string | null> {
+  const { userId } = await getUserId(c);
+  return userId;
 }
 
 // AI Router - classify query complexity

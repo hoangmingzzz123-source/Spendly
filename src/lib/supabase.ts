@@ -40,86 +40,214 @@ export function markLoginSuccess() {
   sessionRestoredResolve();
 }
 
-function parseJwtPayload(token: string): Record<string, any> | null {
+// Force clear all auth-related data from localStorage
+export async function forceSignOut() {
+  console.log('[Supabase] Force sign out - clearing all session data');
+  
+  // Sign out from Supabase (clears their internal storage)
   try {
-    const payloadPart = token.split('.')[1];
-    if (!payloadPart) return null;
-    const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-    return JSON.parse(atob(padded));
-  } catch {
-    return null;
+    await supabase.auth.signOut();
+  } catch (err) {
+    console.error('[Supabase] Error during signOut:', err);
+  }
+  
+  // Manually clear all possible auth keys from localStorage
+  try {
+    const keysToRemove = [
+      'access_token',
+      'spendly_user',
+      'sb-access-token',
+      'sb-refresh-token',
+    ];
+    
+    // Clear known keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log('[Supabase] ✅ Removed:', key);
+    });
+    
+    // Also clear any Supabase auth keys (they use a specific pattern)
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.includes('-auth-token')) {
+        console.log('[Supabase] ✅ Removing key:', key);
+        localStorage.removeItem(key);
+      }
+    });
+    
+    console.log('[Supabase] ✅ All session data cleared');
+  } catch (err) {
+    console.error('[Supabase] Error clearing localStorage:', err);
   }
 }
 
-function isUsableAccessToken(token: string | null): token is string {
-  if (!token) return false;
-  const parts = token.split('.');
-  if (parts.length !== 3) return false;
-
-  const payload = parseJwtPayload(token);
-  if (!payload) return false;
-
-  // Reject tokens from another Supabase project (common after env/project switches).
-  if (payload.ref && payload.ref !== projectId) return false;
-
-  // Reject expired tokens early to avoid hitting gateway with invalid JWT.
-  if (typeof payload.exp === 'number') {
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp <= now) return false;
+// Debug helper: Check current token status
+export async function debugTokenStatus() {
+  console.group('[Debug] Token Status');
+  
+  try {
+    // Check Supabase session
+    const { data: { session }, error } = await supabase.auth.getSession();
+    console.log('Supabase session:', session ? '✅ EXISTS' : '❌ NULL');
+    console.log('Session error:', error ?? 'none');
+    
+    if (session?.access_token) {
+      console.log('Token prefix:', session.access_token.substring(0, 30) + '...');
+      console.log('Token expires at:', new Date(session.expires_at! * 1000).toISOString());
+      console.log('Token expired:', session.expires_at! * 1000 < Date.now() ? '❌ YES' : '✅ NO');
+      
+      // Try to verify token
+      const { data: { user }, error: userError } = await supabase.auth.getUser(session.access_token);
+      console.log('Token verification:', userError ? `❌ FAIL: ${userError.message}` : `✅ VALID for user ${user?.id}`);
+    }
+    
+    // Check localStorage
+    const storedToken = localStorage.getItem('access_token');
+    console.log('localStorage token:', storedToken ? '✅ EXISTS' : '❌ NULL');
+    if (storedToken) {
+      console.log('Stored token prefix:', storedToken.substring(0, 30) + '...');
+    }
+    
+    // Check all localStorage keys
+    const allKeys = Object.keys(localStorage);
+    console.log('All localStorage keys:', allKeys);
+    
+  } catch (err) {
+    console.error('Debug failed:', err);
   }
+  
+  console.groupEnd();
+}
 
-  return true;
+// Expose to window for easy debugging
+if (typeof window !== 'undefined') {
+  (window as any).debugToken = debugTokenStatus;
+  (window as any).clearAuth = forceSignOut;
+  
+  // Test backend env and token validation
+  (window as any).testBackendEnv = async () => {
+    console.log('🧪 Testing backend environment...');
+    try {
+      const response = await fetch(`${API_BASE}/debug/env`);
+      const data = await response.json();
+      console.log('Backend env:', data);
+      return data;
+    } catch (err) {
+      console.error('Backend env test failed:', err);
+    }
+  };
+  
+  (window as any).testBackendToken = async () => {
+    console.log('🧪 Testing backend token validation...');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('❌ No token available');
+        return;
+      }
+      
+      console.log('Token prefix:', session.access_token.substring(0, 30) + '...');
+      
+      const response = await fetch(`${API_BASE}/debug/token`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      const data = await response.json();
+      console.log('Backend token test:', data);
+      return data;
+    } catch (err) {
+      console.error('Backend token test failed:', err);
+    }
+  };
 }
 
 export async function apiRequest(
   endpoint: string,
   options: RequestInit = {},
   retryCount = 0,
-  forcedToken: string | null = null
+  explicitToken?: string | null  // Allow passing explicit token for retry
 ): Promise<any> {
   // Wait for the initial session restoration before making API calls
   if (!sessionRestored) {
     await sessionRestoredPromise;
   }
 
-  // Always get token from Supabase client (source of truth for session)
-  let token: string | null = null;
-  if (forcedToken) {
-    token = forcedToken;
-  } else {
+  // Get token: use explicit token if provided (from refresh), otherwise get from session
+  let token: string | null = explicitToken !== undefined ? explicitToken : null;
+  
+  if (token === null && explicitToken === undefined) {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // CRITICAL FIX: getSession() can return stale session from memory cache
+      // Force a fresh session check by calling getSession() with forceRefresh behavior
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error(`[API] Session error for ${endpoint}:`, error.message);
+        // Clear stale localStorage on session error
+        await forceSignOut();
+      }
+      
       token = session?.access_token ?? null;
-    } catch {
-      // ignore
+      
+      // Double-check: if no token from session, try localStorage as fallback
+      if (!token) {
+        const storedToken = localStorage.getItem('access_token');
+        if (storedToken) {
+          console.warn(`[API] ⚠️ Attempting fallback localStorage token for ${endpoint}`);
+          // CRITICAL: Verify localStorage token before using it
+          try {
+            const { data: { user: verifiedUser }, error: verifyError } = await supabase.auth.getUser(storedToken);
+            if (verifyError || !verifiedUser) {
+              console.error(`[API] ❌ localStorage token is invalid, clearing:`, verifyError?.message);
+              await forceSignOut();
+              token = null;
+            } else {
+              console.log(`[API] ✅ localStorage token verified successfully`);
+              token = storedToken;
+            }
+          } catch (verifyException) {
+            console.error(`[API] ❌ Token verification failed:`, verifyException);
+            await forceSignOut();
+            token = null;
+          }
+        } else {
+          console.error(`[API] ❌ No token available for ${endpoint}. Session:`, session ? 'exists but no token' : 'null');
+        }
+      } else {
+        console.log(`[API] ✅ Token retrieved for ${endpoint}, token prefix: ${token.substring(0, 30)}...`);
+      }
+    } catch (error) {
+      console.error(`[API] Failed to get session for ${endpoint}:`, error);
+      await forceSignOut();
     }
+  } else if (explicitToken !== undefined) {
+    console.log(`[API] Using explicit token for ${endpoint}: ${!!token}`);
+  }
+
+  // If no token and not auth endpoint, this is an error
+  if (!token && !endpoint.startsWith('/auth/')) {
+    console.error(`[API] ❌ CRITICAL: No access token for protected endpoint ${endpoint}!`);
+    console.error(`[API] Redirecting to login due to missing token...`);
+    // Force redirect to login
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 100);
+    throw new Error('No access token available for protected endpoint');
   }
 
   const isAuthEndpoint = endpoint.startsWith('/auth/');
+  const authToken = (token && !isAuthEndpoint) ? token : publicAnonKey;
 
-  if (!isAuthEndpoint && token && !isUsableAccessToken(token)) {
-    console.warn('[API] Ignoring unusable access token (stale/invalid/wrong project).');
-    token = null;
-  }
-
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> || {}),
-    'Content-Type': 'application/json',
-    // Send Supabase API token (anon key) for function gateway routing.
-    apikey: publicAnonKey,
-  };
-
-  if (!isAuthEndpoint && token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    // Keep Authorization present so the Supabase function gateway does not reject the request.
-    headers['Authorization'] = `Bearer ${publicAnonKey}`;
-  }
+  const tokenPrefix = authToken.substring(0, 30) + '...';
+  console.log(`[API] Request ${endpoint}, using ${token && !isAuthEndpoint ? 'access_token' : 'anon_key'}, retry: ${retryCount}, token prefix: ${tokenPrefix}`);
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+      ...(options.headers as Record<string, string> || {}),
+    },
   });
 
   if (!response.ok) {
@@ -129,24 +257,55 @@ export async function apiRequest(
     // On 401, try once more after refreshing session
     if (response.status === 401 && !isAuthEndpoint && retryCount === 0) {
       console.warn('[API] 401 received, attempting session refresh and retry...');
-      try {
-        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-        if (refreshedSession?.access_token) {
-          return apiRequest(endpoint, options, retryCount + 1, refreshedSession.access_token);
-        }
-      } catch {
-        // refresh failed
+      
+      // CRITICAL: If backend returns "Invalid JWT", the token is corrupted
+      // Check if error message contains "Invalid JWT"
+      const errorMsg = error?.message || '';
+      if (errorMsg.includes('Invalid JWT')) {
+        console.error('[API] ❌ Token is corrupted (Invalid JWT), forcing complete sign out...');
+        await forceSignOut();
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+        return;
       }
-      // No valid session — redirect to login
-      console.warn('[API] No valid session after refresh, redirecting to login...');
+      
       try {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('spendly_user');
-      } catch {}
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 100);
-      return;
+        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.error('[API] Session refresh failed:', refreshError.message, refreshError.status);
+          // If refresh fails, user needs to re-login - FORCE CLEAR ALL DATA
+          console.warn('[API] Refresh failed, force clearing all session data...');
+          await forceSignOut();
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+          return;
+        } else if (refreshedSession?.access_token) {
+          console.log('[API] ✅ Session refreshed successfully, new token prefix:', refreshedSession.access_token.substring(0, 30) + '...');
+          // Persist the new token immediately
+          try {
+            localStorage.setItem('access_token', refreshedSession.access_token);
+          } catch {}
+          // Pass the new token explicitly to avoid race condition with session persistence
+          return apiRequest(endpoint, options, retryCount + 1, refreshedSession.access_token);
+        } else {
+          console.error('[API] Refresh returned no session, force clearing...');
+          await forceSignOut();
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+          return;
+        }
+      } catch (refreshException) {
+        console.error('[API] Session refresh exception:', refreshException);
+        // Redirect to login on exception
+        await forceSignOut();
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+        return;
+      }
     }
 
     throw new Error(error.error || error.message || 'Request failed');

@@ -23,18 +23,31 @@ export function Register() {
     setLoading(true);
 
     try {
+      console.log('[Register] Starting registration process...');
       const response = await authApi.register({ name, email, password });
       
       if (response.data?.user) {
+        console.log('[Register] ✅ User registered, signing in...');
         // Use Supabase client directly after registration — session is managed with auto-refresh
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
         if (data.session) {
+          console.log('[Register] ✅ Login successful after registration');
+          
           // Mark login success to enable grace period for API calls
           markLoginSuccess();
 
           setAccessToken(data.session.access_token);
+          
+          // Persist token immediately
+          try {
+            localStorage.setItem('access_token', data.session.access_token);
+            console.log('[Register] ✅ Token persisted to localStorage');
+          } catch (err) {
+            console.error('[Register] Failed to persist token:', err);
+          }
+          
           setUser({
             id: data.user.id,
             email: data.user.email ?? email,
@@ -43,10 +56,9 @@ export function Register() {
 
           toast.success('Chào mừng bạn đến với Spendly!');
 
-          // Small delay to ensure state is fully propagated
-          setTimeout(() => {
-            navigate('/');
-          }, 50);
+          // Navigate immediately - no delay needed
+          console.log('[Register] ✅ Navigating to dashboard...');
+          navigate('/');
         }
       }
     } catch (error: any) {
@@ -121,6 +133,16 @@ export function Register() {
             <p className="mt-2 text-gray-500 dark:text-gray-400">
               Miễn phí, không cần thẻ tín dụng
             </p>
+          </div>
+
+          {/* Info banner */}
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-emerald-800 dark:text-emerald-200">
+                <strong>Tự động tạo dữ liệu mẫu:</strong> Sau khi đăng ký, hệ thống sẽ tự động tạo 3 tài khoản, 12+ danh mục, và dữ liệu mẫu để bạn test ngay!
+              </div>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

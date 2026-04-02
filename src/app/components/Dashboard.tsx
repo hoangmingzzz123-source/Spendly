@@ -69,7 +69,13 @@ export function Dashboard() {
         name = `${name} (${idx + 1})`;
       }
       seen.add(name);
-      return { name, value: cat.amount, color: cat.categoryColor };
+      // Add unique ID for Cell keys
+      return { 
+        id: `${cat.categoryId || 'cat'}-${idx}`, 
+        name, 
+        value: cat.amount, 
+        color: cat.categoryColor 
+      };
     });
   }, [dashboardData?.topCategories]);
 
@@ -238,12 +244,12 @@ export function Dashboard() {
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                    <stop key="income-stop-0" offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop key="income-stop-100" offset="100%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+                    <stop key="expense-stop-0" offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop key="expense-stop-100" offset="100%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
@@ -254,8 +260,8 @@ export function Dashboard() {
                   contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                 />
                 <Legend />
-                <Area type="monotone" dataKey="income" stroke="#10b981" fill="url(#incomeGrad)" strokeWidth={2.5} name="Thu nhập" dot={false} />
-                <Area type="monotone" dataKey="expense" stroke="#ef4444" fill="url(#expenseGrad)" strokeWidth={2.5} name="Chi tiêu" dot={false} />
+                <Area key="income-area" type="monotone" dataKey="income" stroke="#10b981" fill="url(#incomeGrad)" strokeWidth={2.5} name="Thu nhập" dot={false} />
+                <Area key="expense-area" type="monotone" dataKey="expense" stroke="#ef4444" fill="url(#expenseGrad)" strokeWidth={2.5} name="Chi tiêu" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -280,8 +286,8 @@ export function Dashboard() {
                     dataKey="value"
                     strokeWidth={0}
                   >
-                    {pieChartData.map((_: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {pieChartData.map((entry: any, index: number) => (
+                      <Cell key={entry.id} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number) => formatCurrency(value)} />
@@ -313,7 +319,7 @@ export function Dashboard() {
             {dashboardData?.topCategories?.slice(0, 5).map((cat: any, index: number) => {
               const pct = dashboardData.expense > 0 ? (cat.amount / dashboardData.expense) * 100 : 0;
               return (
-                <div key={cat.categoryId} className="flex items-center gap-3">
+                <div key={cat.categoryId || `category-${index}`} className="flex items-center gap-3">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                     style={{ backgroundColor: COLORS[index % COLORS.length] }}

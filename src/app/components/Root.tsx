@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router';
 import { useStore } from '../../lib/store';
-import { supabase, ensureSessionRestored } from '../../lib/supabase';
+import { supabase, ensureSessionRestored, forceSignOut } from '../../lib/supabase';
 import { queryClient } from '../App';
 import { Button } from './ui/button';
 import { WelcomeDialog } from './WelcomeDialog';
@@ -50,20 +50,58 @@ export function Root() {
   // On mount, restore Supabase session and sync token to Zustand
   useEffect(() => {
     const restoreSession = async () => {
+      console.log('[Root] Starting session restoration...');
       await ensureSessionRestored();
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[Root] Session restoration error:', error);
+          // Force clean logout if session is corrupted
+          await forceSignOut();
+          setIsInitializing(false);
+          return;
+        }
+        
         if (session?.access_token) {
+          // Verify token is actually valid by trying to get user
+          const { data: { user: verifiedUser }, error: userError } = await supabase.auth.getUser(session.access_token);
+          
+          if (userError || !verifiedUser) {
+            console.error('[Root] Token invalid, signing out:', userError?.message);
+            // Token is invalid - force sign out and clear ALL storage
+            await forceSignOut();
+            setIsInitializing(false);
+            return;
+          }
+          
+          // Token is valid
+          console.log('[Root] ✅ Session restored successfully for user:', verifiedUser.id);
           setAccessToken(session.access_token);
-          const u = session.user;
+          
+          // CRITICAL: Persist token to localStorage immediately
+          try {
+            localStorage.setItem('access_token', session.access_token);
+            console.log('[Root] ✅ Token persisted to localStorage');
+          } catch (err) {
+            console.error('[Root] Failed to persist token:', err);
+          }
+          
+          const u = verifiedUser;
           if (u) {
             setUser({ id: u.id, email: u.email ?? '', name: u.user_metadata?.name ?? '' });
           }
+        } else {
+          // No session at all - but don't immediately redirect, might be on /login or /register
+          console.log('[Root] No session found on mount');
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('[Root] Session restoration exception:', err);
+        // Clean up on any error
+        await forceSignOut();
       }
       setIsInitializing(false);
+      console.log('[Root] ✅ Initialization complete');
     };
     restoreSession();
   }, []);
@@ -71,11 +109,22 @@ export function Root() {
   // Sync Supabase session changes (auto token refresh, sign-out) with Zustand
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Root] Auth state changed:', event);
       if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
-        console.log(`[Auth] ${event}`);
+        console.log(`[Root] ${event} - updating token in store`);
         setAccessToken(session.access_token);
         try { localStorage.setItem('access_token', session.access_token); } catch {}
+        
+        // Update user info on sign in
+        if (event === 'SIGNED_IN' && session.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email ?? '',
+            name: session.user.user_metadata?.name ?? '',
+          });
+        }
       } else if (event === 'SIGNED_OUT') {
+        console.log('[Root] SIGNED_OUT event - clearing store');
         logout();
       }
     });
@@ -83,12 +132,17 @@ export function Root() {
   }, [setAccessToken, setUser, logout]);
 
   useEffect(() => {
-    // Only redirect if we're done initializing and truly have no token
-    if (!isInitializing && !accessToken) {
-      console.log('[Root] No access token, redirecting to login');
+    // Only redirect if:
+    // 1. We're done initializing
+    // 2. We truly have no token
+    // 3. We're trying to access a protected route (not /login or /register)
+    const isPublicRoute = location.pathname === '/login' || location.pathname === '/register';
+    
+    if (!isInitializing && !accessToken && !isPublicRoute) {
+      console.log('[Root] ⚠️ No access token on protected route, redirecting to login');
       navigate('/login');
     }
-  }, [accessToken, navigate, isInitializing]);
+  }, [accessToken, navigate, isInitializing, location.pathname]);
 
   const handleLogout = async () => {
     // Sign out from Supabase (clears their session storage)
@@ -148,7 +202,21 @@ export function Root() {
     allNavItems.find((i) => i.path === '/settings')!,
   ];
 
-  if (!accessToken) return null;
+  // Show loading screen while initializing or if no access token
+  if (isInitializing || !accessToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50/50 dark:bg-gray-950">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mx-auto animate-pulse">
+            <Wallet className="w-8 h-8 text-white" />
+          </div>
+          {isInitializing && (
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Đang khởi tạo...</p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-gray-950">

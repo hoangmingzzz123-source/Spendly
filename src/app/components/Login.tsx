@@ -21,16 +21,30 @@ export function Login() {
     setLoading(true);
 
     try {
+      // Don't clear session before login - Supabase handles session replacement automatically
+      console.log('[Login] Starting login process...');
+      
       // Use Supabase client directly — session is managed with auto-refresh
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) throw error;
 
       if (data.session) {
+        console.log('[Login] ✅ Login successful, session created');
+        
         // Mark login success to enable grace period for API calls
         markLoginSuccess();
 
         setAccessToken(data.session.access_token);
+        
+        // Persist token immediately
+        try {
+          localStorage.setItem('access_token', data.session.access_token);
+          console.log('[Login] ✅ Token persisted to localStorage');
+        } catch (err) {
+          console.error('[Login] Failed to persist token:', err);
+        }
+        
         setUser({
           id: data.user.id,
           email: data.user.email ?? email,
@@ -39,10 +53,9 @@ export function Login() {
 
         toast.success('Chào mừng bạn trở lại!');
 
-        // Small delay to ensure state is fully propagated
-        setTimeout(() => {
-          navigate('/');
-        }, 50);
+        // Navigate immediately - no delay needed
+        console.log('[Login] ✅ Navigating to dashboard...');
+        navigate('/');
       }
     } catch (error: any) {
       toast.error(error.message || 'Đăng nhập thất bại');
@@ -120,6 +133,30 @@ export function Login() {
             <p className="mt-2 text-gray-500 dark:text-gray-400">
               Đăng nhập để tiếp tục quản lý tài chính
             </p>
+          </div>
+
+          {/* Info banner for session issues */}
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <div className="space-y-2">
+              <p className="text-sm text-amber-900 dark:text-amber-200 font-semibold">
+                🔑 Lỗi "Invalid JWT" hoặc redirect loop?
+              </p>
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                Hãy thử: (1) <strong>Đăng ký tài khoản MỚI</strong> để test với dữ liệu mẫu tự động, hoặc (2) Bấm nút bên dưới để xóa session cũ.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  console.log('[Login] Manual clear auth triggered');
+                  const { forceSignOut } = await import('../../lib/supabase');
+                  await forceSignOut();
+                  toast.success('Đã xóa session cũ! Hãy thử đăng nhập lại.');
+                }}
+                className="text-xs text-amber-700 dark:text-amber-400 hover:underline font-medium"
+              >
+                → Xóa session cũ và thử lại
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
