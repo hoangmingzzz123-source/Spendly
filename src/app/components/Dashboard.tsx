@@ -14,8 +14,7 @@ import {
   BarChart3,
   Activity,
   Sparkles,
-  ArrowRight,
-  ReceiptText
+  ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { 
@@ -61,11 +60,18 @@ export function Dashboard() {
     return amount.toString();
   };
 
-  const pieChartData = dashboardData?.topCategories?.map((cat: any, idx: number) => ({
-    name: cat.categoryName || `Category ${idx + 1}`,
-    value: cat.amount,
-    color: cat.categoryColor,
-  })) || [];
+  const pieChartData = useMemo(() => {
+    const seen = new Set<string>();
+    return (dashboardData?.topCategories || []).map((cat: any, idx: number) => {
+      let name = cat.categoryName || `Category ${idx + 1}`;
+      // Ensure unique names for Recharts keys
+      if (seen.has(name)) {
+        name = `${name} (${idx + 1})`;
+      }
+      seen.add(name);
+      return { name, value: cat.amount, color: cat.categoryColor };
+    });
+  }, [dashboardData?.topCategories]);
 
   const savingsRate = dashboardData?.income > 0 
     ? ((dashboardData.income - dashboardData.expense) / dashboardData.income) * 100 
@@ -388,7 +394,6 @@ export function Dashboard() {
           { to: '/goals', icon: Activity, label: 'Mục tiêu', color: 'from-violet-500 to-purple-500', shadow: 'shadow-violet-500/20' },
           { to: '/chat', icon: Sparkles, label: 'AI Chat', color: 'from-indigo-500 to-blue-500', shadow: 'shadow-indigo-500/20' },
           { to: '/ocr', icon: BarChart3, label: 'Quét bill', color: 'from-pink-500 to-rose-500', shadow: 'shadow-pink-500/20' },
-          { to: '/bill', icon: ReceiptText, label: 'Chia bill', color: 'from-amber-500 to-orange-500', shadow: 'shadow-amber-500/20' },
         ].map((action) => (
           <Link key={action.to} to={action.to}>
             <div className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${action.color} p-4 lg:p-5 text-white shadow-lg ${action.shadow} hover:scale-[1.02] transition-transform cursor-pointer`}>

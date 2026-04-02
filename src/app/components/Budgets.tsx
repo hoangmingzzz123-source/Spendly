@@ -10,7 +10,6 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback } from './ui/avatar';
 import { toast } from 'sonner';
 import { Plus, TrendingUp, AlertTriangle, CheckCircle2, Edit2, Trash2, Lightbulb, Sparkles } from 'lucide-react';
 import { SAMPLE_BUDGET_TEMPLATES } from '../../lib/sampleData';
@@ -342,13 +341,9 @@ export function Budgets() {
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <Avatar style={{ backgroundColor: category?.color + '20' }}>
-                        <AvatarFallback>
-                          {category?.icon
-                            ? category.icon
-                            : (category?.name ? category.name.charAt(0).toUpperCase() : '💰')}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: category?.color + '20' }}>
+                        <span className="text-lg">{category?.icon || '📊'}</span>
+                      </div>
                       <div>
                         <CardTitle className="text-lg">{category?.name || 'Unknown'}</CardTitle>
                         <CardDescription>{budget.month}</CardDescription>

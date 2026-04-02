@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router';
 import { useStore } from '../../lib/store';
-import { supabase, setCachedToken } from '../../lib/supabase';
+import { supabase, ensureSessionRestored } from '../../lib/supabase';
 import { queryClient } from '../App';
 import { Button } from './ui/button';
 import { WelcomeDialog } from './WelcomeDialog';
@@ -47,24 +47,35 @@ export function Root() {
     }
   }, [theme]);
 
+  // On mount, restore Supabase session and sync token to Zustand
   useEffect(() => {
-    // Give a brief moment for authentication state to stabilize after login
-    const timer = setTimeout(() => {
+    const restoreSession = async () => {
+      await ensureSessionRestored();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          setAccessToken(session.access_token);
+          const u = session.user;
+          if (u) {
+            setUser({ id: u.id, email: u.email ?? '', name: u.user_metadata?.name ?? '' });
+          }
+        }
+      } catch {
+        // ignore
+      }
       setIsInitializing(false);
-    }, 100);
-    return () => clearTimeout(timer);
+    };
+    restoreSession();
   }, []);
 
   // Sync Supabase session changes (auto token refresh, sign-out) with Zustand
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'TOKEN_REFRESHED' && session) {
-        console.log('[Auth] Token auto-refreshed');
-        setCachedToken(session.access_token);
+      if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
+        console.log(`[Auth] ${event}`);
         setAccessToken(session.access_token);
         try { localStorage.setItem('access_token', session.access_token); } catch {}
       } else if (event === 'SIGNED_OUT') {
-        setCachedToken(null);
         logout();
       }
     });
@@ -82,8 +93,6 @@ export function Root() {
   const handleLogout = async () => {
     // Sign out from Supabase (clears their session storage)
     await supabase.auth.signOut();
-    // Clear cached token
-    setCachedToken(null);
     // Clear React Query cache
     queryClient.clear();
     // Clear Zustand store
@@ -124,7 +133,6 @@ export function Root() {
         { path: '/bill-split', label: 'Chia bill', icon: Receipt },
         { path: '/chat', label: 'AI Chat', icon: Bot },
         { path: '/ocr', label: 'Quét bill', icon: Scan },
-        { path: '/bill', label: 'Chia bill', icon: ReceiptText },
         { path: '/family', label: 'Gia đình', icon: Users },
         { path: '/settings', label: 'Cài đặt', icon: SettingsIcon },
       ],

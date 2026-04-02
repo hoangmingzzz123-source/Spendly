@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useStore } from '../../lib/store';
-import { supabase, markLoginSuccess, setCachedToken } from '../../lib/supabase';
+import { supabase, markLoginSuccess } from '../../lib/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -30,7 +30,6 @@ export function Login() {
         // Mark login success to enable grace period for API calls
         markLoginSuccess();
 
-        setCachedToken(data.session.access_token);
         setAccessToken(data.session.access_token);
         setUser({
           id: data.user.id,

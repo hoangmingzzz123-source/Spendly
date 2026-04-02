@@ -15,19 +15,29 @@ export const supabase = createClient(
   }
 );
 
-// Track last login time to prevent immediate auto-logout after login
-let lastLoginTime = 0;
-const LOGIN_GRACE_PERIOD = 5000; // 5 seconds
+// Promise that resolves once the Supabase session has been restored on startup
+let sessionRestoredResolve: () => void;
+const sessionRestoredPromise = new Promise<void>((resolve) => {
+  sessionRestoredResolve = resolve;
+});
+let sessionRestored = false;
 
-// Module-level token cache — set synchronously after login, always fresh
-let cachedAccessToken: string | null = null;
-
-export function markLoginSuccess() {
-  lastLoginTime = Date.now();
+// Call once on app mount to ensure Supabase has loaded its persisted session
+export async function ensureSessionRestored() {
+  if (sessionRestored) return;
+  try {
+    await supabase.auth.getSession();
+  } catch {
+    // ignore
+  }
+  sessionRestored = true;
+  sessionRestoredResolve();
 }
 
-export function setCachedToken(token: string | null) {
-  cachedAccessToken = token;
+export function markLoginSuccess() {
+  // Mark session as restored since we just logged in
+  sessionRestored = true;
+  sessionRestoredResolve();
 }
 
 export async function apiRequest(
@@ -35,19 +45,18 @@ export async function apiRequest(
   options: RequestInit = {},
   retryCount = 0
 ): Promise<any> {
-  // Use the cached token first (set synchronously after login), then fall back to getSession
-  let token: string | null = cachedAccessToken;
-  if (!token) {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      token = session?.access_token ?? null;
-    } catch {
-      try {
-        token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      } catch {
-        token = null;
-      }
-    }
+  // Wait for the initial session restoration before making API calls
+  if (!sessionRestored) {
+    await sessionRestoredPromise;
+  }
+
+  // Always get token from Supabase client (source of truth for session)
+  let token: string | null = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token ?? null;
+  } catch {
+    // ignore
   }
 
   const isAuthEndpoint = endpoint.startsWith('/auth/');
@@ -62,31 +71,31 @@ export async function apiRequest(
     },
   });
 
-
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
     console.error(`[API] ❌ ${response.status} ${endpoint}`, error);
 
-    // Auto-logout on invalid/expired JWT (but not on auth endpoints or during grace period)
-    if (response.status === 401 && !isAuthEndpoint) {
-      const timeSinceLogin = Date.now() - lastLoginTime;
-      const isInGracePeriod = timeSinceLogin < LOGIN_GRACE_PERIOD;
-
-      if (isInGracePeriod && retryCount === 0) {
-        console.warn('[API] 401 during grace period after login, retrying once...');
-        await new Promise(resolve => setTimeout(resolve, 800));
-        return apiRequest(endpoint, options, retryCount + 1);
-      } else if (!isInGracePeriod) {
-        console.warn('[API] Token expired or invalid, logging out...');
-        try {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('spendly_user');
-        } catch {}
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 100);
-        return;
+    // On 401, try once more after refreshing session
+    if (response.status === 401 && !isAuthEndpoint && retryCount === 0) {
+      console.warn('[API] 401 received, attempting session refresh and retry...');
+      try {
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+        if (refreshedSession?.access_token) {
+          return apiRequest(endpoint, options, retryCount + 1);
+        }
+      } catch {
+        // refresh failed
       }
+      // No valid session — redirect to login
+      console.warn('[API] No valid session after refresh, redirecting to login...');
+      try {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('spendly_user');
+      } catch {}
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 100);
+      return;
     }
 
     throw new Error(error.error || error.message || 'Request failed');
