@@ -60,13 +60,25 @@ export async function apiRequest(
   }
 
   const isAuthEndpoint = endpoint.startsWith('/auth/');
-  const authToken = (token && !isAuthEndpoint) ? token : publicAnonKey;
+  
+  // Build headers WITHOUT Authorization for non-auth endpoints that lack a token
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Only add Authorization header if:
+  // 1. It's an auth endpoint (use publicAnonKey) OR
+  // 2. We have a real access token (use it)
+  if (isAuthEndpoint) {
+    headers['Authorization'] = `Bearer ${publicAnonKey}`;
+  } else if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`,
+      ...headers,
       ...(options.headers as Record<string, string> || {}),
     },
   });
