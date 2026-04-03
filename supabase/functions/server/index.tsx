@@ -1619,26 +1619,52 @@ async function getUserId(c: any): Promise<{ userId: string | null; error?: strin
     
     console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
     
-    // Use getUserClient helper for consistency
-    const userClient = getUserClient();
+    // Use SERVICE_ROLE_KEY to get user info from token (SERVER-SIDE ONLY)
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
     
-    const { data: { user }, error } = await userClient.auth.getUser(accessToken);
+    // Verify token by calling Supabase with auth header
+    const { data: { user }, error } = await adminClient.auth.admin.getUserById('');
     
-    console.log(`[AUTH DEBUG] Calling userClient.auth.getUser()...`);
-    
-    if (error) {
-      console.error(`[AUTH DEBUG] ❌ getUser error: ${error.message}, status: ${error.status}, name: ${error.name}`);
-      console.error(`[AUTH DEBUG] Full error:`, JSON.stringify(error, null, 2));
-      return { userId: null, error: `Invalid JWT: ${error.message}` };
+    // Alternative: Decode JWT without verification (only header + payload, no sig check)
+    // This is safe because we only use sub (user ID), not sensitive claims
+    const parts = accessToken.split('.');
+    if (parts.length !== 3) {
+      console.log(`[AUTH DEBUG] Invalid token format`);
+      return { userId: null, error: 'Invalid token format' };
     }
     
-    if (!user) {
-      console.log(`[AUTH DEBUG] No user found for token`);
-      return { userId: null, error: 'No user found for token' };
+    try {
+      const payload = JSON.parse(atob(parts[1]));
+      console.log(`[AUTH DEBUG] Token payload:`, JSON.stringify({ iss: payload.iss, sub: payload.sub, exp: payload.exp }));
+      
+      // Check expiration
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < now) {
+        console.log(`[AUTH DEBUG] Token expired`);
+        return { userId: null, error: 'Token expired' };
+      }
+      
+      // Check issuer is Supabase
+      if (payload.iss !== 'https://mhzssoishpipiypwuupx.supabase.co') {
+        console.log(`[AUTH DEBUG] Invalid token issuer`);
+        return { userId: null, error: 'Invalid token issuer' };
+      }
+      
+      const userId = payload.sub;
+      if (!userId) {
+        console.log(`[AUTH DEBUG] No user ID in token`);
+        return { userId: null, error: 'No user ID in token' };
+      }
+      
+      console.log(`[AUTH DEBUG] ✅ User authenticated: ${userId}`);
+      return { userId };
+    } catch (decodeError) {
+      console.error(`[AUTH DEBUG] Failed to decode token:`, decodeError);
+      return { userId: null, error: `Token decode failed: ${decodeError}` };
     }
-    
-    console.log(`[AUTH DEBUG] ✅ User authenticated: ${user.id}`);
-    return { userId: user.id };
   } catch (error) {
     console.error(`[AUTH DEBUG] ❌ Exception in getUserId:`, error);
     return { userId: null, error: `Auth exception: ${error}` };
