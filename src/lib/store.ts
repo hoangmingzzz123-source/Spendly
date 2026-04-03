@@ -18,11 +18,13 @@ interface AppState {
   currentMonth: string;
   theme: 'light' | 'dark' | 'system';
   familyGroup: FamilyGroup | null;
+  isDemo: boolean; // Demo mode flag
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
   setCurrentMonth: (month: string) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setFamilyGroup: (group: FamilyGroup | null) => void;
+  setDemo: (isDemo: boolean) => void;
   logout: () => void;
 }
 
@@ -60,6 +62,7 @@ export const useStore = create<AppState>((set) => ({
   currentMonth: new Date().toISOString().slice(0, 7),
   theme: getStoredTheme(),
   familyGroup: null,
+  isDemo: false,
   setUser: (user) => {
     try {
       if (typeof window !== 'undefined') {
@@ -100,6 +103,10 @@ export const useStore = create<AppState>((set) => ({
     set({ theme });
   },
   setFamilyGroup: (group) => set({ familyGroup: group }),
+  setDemo: (isDemo) => {
+    console.log('[Store] Demo mode:', isDemo ? 'ENABLED' : 'DISABLED');
+    set({ isDemo });
+  },
   logout: () => {
     try {
       if (typeof window !== 'undefined') {
@@ -109,6 +116,6 @@ export const useStore = create<AppState>((set) => ({
     } catch (error) {
       console.error('Failed to access localStorage:', error);
     }
-    set({ user: null, accessToken: null, familyGroup: null });
+    set({ user: null, accessToken: null, familyGroup: null, isDemo: false });
   },
 }));

@@ -3,7 +3,17 @@ import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 export const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-f5f5b39c`;
 
+// Log API base for debugging
+console.log('[Config] API_BASE:', API_BASE);
+console.log('[Config] Project ID:', projectId);
+
+// Expose project ID to window for diagnostic tools
+if (typeof window !== 'undefined') {
+  (window as any).projectId = projectId;
+}
+
 // Supabase client for auth management — handles token refresh automatically
+// Use a unique storage key to avoid multiple instance warnings
 export const supabase = createClient(
   `https://${projectId}.supabase.co`,
   publicAnonKey,
@@ -11,6 +21,8 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      storageKey: 'spendly-auth', // Unique key to avoid conflicts
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
   }
 );
@@ -56,6 +68,7 @@ export async function forceSignOut() {
     const keysToRemove = [
       'access_token',
       'spendly_user',
+      'spendly-auth', // New storage key
       'sb-access-token',
       'sb-refresh-token',
     ];
@@ -85,7 +98,7 @@ export async function debugTokenStatus() {
   console.group('[Debug] Token Status');
   
   try {
-    // Check Supabase session
+    // 1. Check Supabase session
     const { data: { session }, error } = await supabase.auth.getSession();
     console.log('Supabase session:', session ? '✅ EXISTS' : '❌ NULL');
     console.log('Session error:', error ?? 'none');
@@ -95,21 +108,38 @@ export async function debugTokenStatus() {
       console.log('Token expires at:', new Date(session.expires_at! * 1000).toISOString());
       console.log('Token expired:', session.expires_at! * 1000 < Date.now() ? '❌ YES' : '✅ NO');
       
-      // Try to verify token
+      // Try to verify token locally
       const { data: { user }, error: userError } = await supabase.auth.getUser(session.access_token);
-      console.log('Token verification:', userError ? `❌ FAIL: ${userError.message}` : `✅ VALID for user ${user?.id}`);
+      console.log('Token verification:', userError ? `❌ FAIL: ${userError.message}` : `✅ VALID for user ${user?.id}`);;
+      
+      // 2. Test backend validation
+      console.log('\n[Testing backend token validation...]');
+      try {
+        const backendTest = await fetch(`${API_BASE}/debug/token`, {
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`, // Gateway auth
+            'X-User-Token': session.access_token, // User auth
+          },
+        });
+        const backendData = await backendTest.json();
+        console.log('Backend token test:', backendTest.ok ? '✅ VALID' : '❌ INVALID');
+        console.log('Backend response:', backendData);
+      } catch (backendErr) {
+        console.error('❌ Backend test failed:', backendErr);
+      }
     }
     
-    // Check localStorage
+    // 3. Check localStorage
     const storedToken = localStorage.getItem('access_token');
-    console.log('localStorage token:', storedToken ? '✅ EXISTS' : '❌ NULL');
+    console.log('\nlocalStorage token:', storedToken ? '✅ EXISTS' : '❌ NULL');
     if (storedToken) {
       console.log('Stored token prefix:', storedToken.substring(0, 30) + '...');
+      console.log('Tokens match:', storedToken === session?.access_token ? '✅ YES' : '❌ NO');
     }
     
-    // Check all localStorage keys
+    // 4. Check all localStorage keys
     const allKeys = Object.keys(localStorage);
-    console.log('All localStorage keys:', allKeys);
+    console.log('\nAll localStorage keys:', allKeys);
     
   } catch (err) {
     console.error('Debug failed:', err);
@@ -149,7 +179,8 @@ if (typeof window !== 'undefined') {
       
       const response = await fetch(`${API_BASE}/debug/token`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${publicAnonKey}`, // Gateway auth
+          'X-User-Token': session.access_token, // User auth
         },
       });
       const data = await response.json();
@@ -236,18 +267,26 @@ export async function apiRequest(
   }
 
   const isAuthEndpoint = endpoint.startsWith('/auth/');
-  const authToken = (token && !isAuthEndpoint) ? token : publicAnonKey;
+  
+  // CRITICAL FIX: Always use publicAnonKey for Authorization header (Supabase gateway requirement)
+  // Pass user token via X-User-Token custom header for backend authentication
+  console.log(`[API] Request ${endpoint}, using ANON_KEY for gateway, user token in X-User-Token, retry: ${retryCount}`);
 
-  const tokenPrefix = authToken.substring(0, 30) + '...';
-  console.log(`[API] Request ${endpoint}, using ${token && !isAuthEndpoint ? 'access_token' : 'anon_key'}, retry: ${retryCount}, token prefix: ${tokenPrefix}`);
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${publicAnonKey}`, // Gateway authentication
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  // For protected endpoints, pass user token via custom header
+  if (token && !isAuthEndpoint) {
+    headers['X-User-Token'] = token;
+    console.log(`[API] Added X-User-Token header, prefix: ${token.substring(0, 30)}...`);
+  }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`,
-      ...(options.headers as Record<string, string> || {}),
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -257,18 +296,6 @@ export async function apiRequest(
     // On 401, try once more after refreshing session
     if (response.status === 401 && !isAuthEndpoint && retryCount === 0) {
       console.warn('[API] 401 received, attempting session refresh and retry...');
-      
-      // CRITICAL: If backend returns "Invalid JWT", the token is corrupted
-      // Check if error message contains "Invalid JWT"
-      const errorMsg = error?.message || '';
-      if (errorMsg.includes('Invalid JWT')) {
-        console.error('[API] ❌ Token is corrupted (Invalid JWT), forcing complete sign out...');
-        await forceSignOut();
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 100);
-        return;
-      }
       
       try {
         const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();

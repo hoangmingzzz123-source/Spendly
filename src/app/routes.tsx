@@ -19,6 +19,7 @@ import { OCRScanner } from './components/OCRScanner';
 import { Help } from './components/Help';
 import { Settings } from './components/Settings';
 import { BillSplit } from './components/BillSplit';
+import { ComingSoon } from './components/ComingSoon';
 import { NotFound } from './components/NotFound';
 
 export const router = createBrowserRouter([
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: 'help', Component: Help },
       { path: 'settings', Component: Settings },
       { path: 'bill-split', Component: BillSplit },
+      { path: 'coming-soon', Component: ComingSoon },
     ],
   },
   { path: '/login', Component: Login },

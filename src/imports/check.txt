@@ -1,0 +1,112 @@
+1️⃣ Testing backend health...
+index-m_PsJ3F9.js:548  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/health 401 (Unauthorized)
+onClick @ index-m_PsJ3F9.js:548
+J @ index-m_PsJ3F9.js:37
+Ce @ index-m_PsJ3F9.js:37
+Me @ index-m_PsJ3F9.js:37
+$N @ index-m_PsJ3F9.js:37
+DN @ index-m_PsJ3F9.js:37
+(anonymous) @ index-m_PsJ3F9.js:37
+xb @ index-m_PsJ3F9.js:40
+lr @ index-m_PsJ3F9.js:37
+x0 @ index-m_PsJ3F9.js:37
+r0 @ index-m_PsJ3F9.js:37
+n8 @ index-m_PsJ3F9.js:37Understand this error
+index-m_PsJ3F9.js:548 Backend status: ❌ OFFLINE
+index-m_PsJ3F9.js:548 
+2️⃣ Testing backend environment...
+index-m_PsJ3F9.js:549  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/debug/env 401 (Unauthorized)
+onClick @ index-m_PsJ3F9.js:549
+await in onClick
+J @ index-m_PsJ3F9.js:37
+Ce @ index-m_PsJ3F9.js:37
+Me @ index-m_PsJ3F9.js:37
+$N @ index-m_PsJ3F9.js:37
+DN @ index-m_PsJ3F9.js:37
+(anonymous) @ index-m_PsJ3F9.js:37
+xb @ index-m_PsJ3F9.js:40
+lr @ index-m_PsJ3F9.js:37
+x0 @ index-m_PsJ3F9.js:37
+r0 @ index-m_PsJ3F9.js:37
+n8 @ index-m_PsJ3F9.js:37Understand this error
+index-m_PsJ3F9.js:549 ❌ Env check failed: {"code":401,"message":"Missing authorization header"}
+onClick @ index-m_PsJ3F9.js:549
+await in onClick
+J @ index-m_PsJ3F9.js:37
+Ce @ index-m_PsJ3F9.js:37
+Me @ index-m_PsJ3F9.js:37
+$N @ index-m_PsJ3F9.js:37
+DN @ index-m_PsJ3F9.js:37
+(anonymous) @ index-m_PsJ3F9.js:37
+xb @ index-m_PsJ3F9.js:40
+lr @ index-m_PsJ3F9.js:37
+x0 @ index-m_PsJ3F9.js:37
+r0 @ index-m_PsJ3F9.js:37
+n8 @ index-m_PsJ3F9.js:37Understand this error
+index-m_PsJ3F9.js:549 
+3️⃣ Checking local token...
+index-m_PsJ3F9.js:95 [Debug] Token Status
+index-m_PsJ3F9.js:95 Supabase session: ✅ EXISTS
+index-m_PsJ3F9.js:95 Session error: none
+index-m_PsJ3F9.js:95 Token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+index-m_PsJ3F9.js:95 Token expires at: 2026-04-04T01:14:24.000Z
+index-m_PsJ3F9.js:95 Token expired: ✅ NO
+index-m_PsJ3F9.js:95 Token verification: ✅ VALID for user a45bcf81-8e94-4b75-8e83-82788ae13dd9
+index-m_PsJ3F9.js:95 
+[Testing backend token validation...]
+index-m_PsJ3F9.js:96  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/debug/token 401 (Unauthorized)
+a5 @ index-m_PsJ3F9.js:96
+await in a5
+onClick @ index-m_PsJ3F9.js:550
+await in onClick
+J @ index-m_PsJ3F9.js:37
+Ce @ index-m_PsJ3F9.js:37
+Me @ index-m_PsJ3F9.js:37
+$N @ index-m_PsJ3F9.js:37
+DN @ index-m_PsJ3F9.js:37
+(anonymous) @ index-m_PsJ3F9.js:37
+xb @ index-m_PsJ3F9.js:40
+lr @ index-m_PsJ3F9.js:37
+x0 @ index-m_PsJ3F9.js:37
+r0 @ index-m_PsJ3F9.js:37
+n8 @ index-m_PsJ3F9.js:37Understand this error
+index-m_PsJ3F9.js:96 Backend token test: ❌ INVALID
+index-m_PsJ3F9.js:96 Backend response: {code: 401, message: 'Invalid JWT'}
+index-m_PsJ3F9.js:96 
+localStorage token: ✅ EXISTS
+index-m_PsJ3F9.js:97 Stored token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+index-m_PsJ3F9.js:97 Tokens match: ✅ YES
+index-m_PsJ3F9.js:97 
+All localStorage keys: (5) ['theme', 'spendly_user', 'spendly-auth', 'access_token', 'hasSeenWelcome']
+index-m_PsJ3F9.js:550 
+4️⃣ Testing backend token validation...
+index-m_PsJ3F9.js:551  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/debug/token 401 (Unauthorized)
+onClick @ index-m_PsJ3F9.js:551
+await in onClick
+J @ index-m_PsJ3F9.js:37
+Ce @ index-m_PsJ3F9.js:37
+Me @ index-m_PsJ3F9.js:37
+$N @ index-m_PsJ3F9.js:37
+DN @ index-m_PsJ3F9.js:37
+(anonymous) @ index-m_PsJ3F9.js:37
+xb @ index-m_PsJ3F9.js:40
+lr @ index-m_PsJ3F9.js:37
+x0 @ index-m_PsJ3F9.js:37
+r0 @ index-m_PsJ3F9.js:37
+n8 @ index-m_PsJ3F9.js:37Understand this error
+index-m_PsJ3F9.js:551 ❌ Backend token validation failed: {code: 401, message: 'Invalid JWT'}
+onClick @ index-m_PsJ3F9.js:551
+await in onClick
+J @ index-m_PsJ3F9.js:37
+Ce @ index-m_PsJ3F9.js:37
+Me @ index-m_PsJ3F9.js:37
+$N @ index-m_PsJ3F9.js:37
+DN @ index-m_PsJ3F9.js:37
+(anonymous) @ index-m_PsJ3F9.js:37
+xb @ index-m_PsJ3F9.js:40
+lr @ index-m_PsJ3F9.js:37
+x0 @ index-m_PsJ3F9.js:37
+r0 @ index-m_PsJ3F9.js:37
+n8 @ index-m_PsJ3F9.js:37Understand this error
+index-m_PsJ3F9.js:551 
+✅ Diagnostic complete!

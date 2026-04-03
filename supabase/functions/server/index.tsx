@@ -10,7 +10,7 @@ const app = new Hono();
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-User-Token'],
 }));
 app.use('*', logger(console.log));
 
@@ -19,6 +19,24 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
+
+// CRITICAL: Hardcoded credentials to ensure frontend/backend sync
+// These match /utils/supabase/info.tsx exactly
+const HARDCODED_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oenNzb2lzaHBpcGl5cHd1dXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MDg2NzQsImV4cCI6MjA5MDA4NDY3NH0.iewipgI4uIEuiomW6r1vY19RwQ3LW8nElh6sOCtipmo';
+const HARDCODED_URL = 'https://mhzssoishpipiypwuupx.supabase.co';
+
+// Helper to get user-facing Supabase client (with ANON_KEY)
+function getUserClient() {
+  // ALWAYS use hardcoded values for now to ensure consistency
+  // Environment variables may be outdated or misconfigured
+  const url = HARDCODED_URL;
+  const key = HARDCODED_ANON_KEY;
+  
+  console.log(`[getUserClient] Using URL: ${url}`);
+  console.log(`[getUserClient] Using ANON_KEY (source: HARDCODED, length: ${key.length})`);
+  
+  return createClient(url, key);
+}
 
 // ========== AUTH ROUTES ==========
 app.post('/make-server-f5f5b39c/auth/register', async (c) => {
@@ -57,10 +75,7 @@ app.post('/make-server-f5f5b39c/auth/login', async (c) => {
     const body = await c.req.json();
     const { email, password } = body;
 
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    );
+    const userClient = getUserClient();
 
     const { data, error } = await userClient.auth.signInWithPassword({
       email,
@@ -84,35 +99,32 @@ app.get('/make-server-f5f5b39c/debug/env', async (c) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const hasAnonKey = !!Deno.env.get('SUPABASE_ANON_KEY');
   const hasServiceKey = !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
   
   return c.json({
     supabaseUrl,
     hasAnonKey,
     hasServiceKey,
-    anonKeyPrefix: hasAnonKey ? Deno.env.get('SUPABASE_ANON_KEY')?.substring(0, 30) + '...' : 'MISSING',
+    anonKeyPrefix: hasAnonKey ? anonKey.substring(0, 50) + '...' : 'MISSING',
+    anonKeyLength: anonKey.length,
+    // Show full key for debugging (remove in production!)
+    anonKeyFull: anonKey,
   });
 });
 
 app.get('/make-server-f5f5b39c/debug/token', async (c) => {
-  const authHeader = c.req.header('Authorization');
+  // CRITICAL FIX: Read user token from X-User-Token header
+  const userToken = c.req.header('X-User-Token');
   
-  if (!authHeader) {
-    return c.json({ error: 'No Authorization header' }, 401);
+  if (!userToken) {
+    return c.json({ error: 'No X-User-Token header' }, 401);
   }
   
-  const token = authHeader.split(' ')[1];
-  if (!token) {
-    return c.json({ error: 'No token in Authorization header' }, 401);
-  }
+  console.log(`[DEBUG] Token length: ${userToken.length}, prefix: ${userToken.substring(0, 30)}...`);
   
-  console.log(`[DEBUG] Token length: ${token.length}, prefix: ${token.substring(0, 30)}...`);
+  const userClient = getUserClient();
   
-  const userClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-  );
-  
-  const { data: { user }, error } = await userClient.auth.getUser(token);
+  const { data: { user }, error } = await userClient.auth.getUser(userToken);
   
   if (error) {
     console.error(`[DEBUG] Token validation FAILED:`, error);
@@ -122,8 +134,9 @@ app.get('/make-server-f5f5b39c/debug/token', async (c) => {
         errorMessage: error.message,
         errorStatus: error.status,
         errorName: error.name,
-        tokenLength: token.length,
-        tokenPrefix: token.substring(0, 30) + '...',
+        tokenLength: userToken.length,
+        tokenPrefix: userToken.substring(0, 30) + '...',
+        anonKeySource: Deno.env.get('SUPABASE_ANON_KEY') ? 'ENV' : 'HARDCODED',
       }
     }, 401);
   }
@@ -136,7 +149,8 @@ app.get('/make-server-f5f5b39c/debug/token', async (c) => {
     success: true,
     userId: user.id,
     userEmail: user.email,
-    tokenPrefix: token.substring(0, 30) + '...',
+    tokenPrefix: userToken.substring(0, 30) + '...',
+    anonKeySource: Deno.env.get('SUPABASE_ANON_KEY') ? 'ENV' : 'HARDCODED',
   });
 });
 
@@ -1583,30 +1597,26 @@ app.post('/make-server-f5f5b39c/bills/:id/complete', async (c) => {
 
 // ========== HELPER FUNCTIONS ==========
 async function getUserId(c: any): Promise<{ userId: string | null; error?: string }> {
+  console.log(`[AUTH DEBUG] ======= getUserId Called =======`);
   try {
-    const authHeader = c.req.header('Authorization');
-    console.log(`[AUTH DEBUG] Authorization header present: ${!!authHeader}`);
+    // CRITICAL FIX: Read user token from X-User-Token header instead of Authorization
+    // Authorization header must contain ANON_KEY for Supabase gateway validation
+    const userToken = c.req.header('X-User-Token');
+    console.log(`[AUTH DEBUG] X-User-Token header present: ${!!userToken}`);
     
-    if (!authHeader) {
-      console.log(`[AUTH DEBUG] No Authorization header`);
-      return { userId: null, error: 'No Authorization header' };
+    if (!userToken) {
+      console.log(`[AUTH DEBUG] No X-User-Token header`);
+      return { userId: null, error: 'No X-User-Token header' };
     }
     
-    const accessToken = authHeader.split(' ')[1];
-    if (!accessToken) {
-      console.log(`[AUTH DEBUG] No token in Authorization header`);
-      return { userId: null, error: 'No token in Authorization header' };
-    }
+    console.log(`[AUTH DEBUG] Token length: ${userToken.length}, starts with: ${userToken.substring(0, 10)}...`);
     
-    console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
+    // Use getUserClient helper for consistency
+    const userClient = getUserClient();
     
-    // IMPORTANT: Use a client with ANON_KEY to verify user tokens (not SERVICE_ROLE_KEY)
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    );
+    const { data: { user }, error } = await userClient.auth.getUser(userToken);
     
-    const { data: { user }, error } = await userClient.auth.getUser(accessToken);
+    console.log(`[AUTH DEBUG] Calling userClient.auth.getUser()...`);
     
     if (error) {
       console.error(`[AUTH DEBUG] ❌ getUser error: ${error.message}, status: ${error.status}, name: ${error.name}`);

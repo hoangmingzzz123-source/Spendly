@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { dashboardApi, accountsApi } from '../../lib/api';
 import { useStore } from '../../lib/store';
+import { formatCurrency, formatShortCurrency } from '../../lib/currency';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { 
@@ -14,7 +15,9 @@ import {
   BarChart3,
   Activity,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Target,
+  Calendar
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { 
@@ -50,15 +53,6 @@ export function Dashboard() {
 
   const dashboardData = summary?.data;
   const balance = balanceData?.data;
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-
-  const formatShortCurrency = (amount: number) => {
-    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `${(amount / 1000).toFixed(0)}K`;
-    return amount.toString();
-  };
 
   const pieChartData = useMemo(() => {
     const seen = new Set<string>();
@@ -131,99 +125,125 @@ export function Dashboard() {
 
   return (
     <div className="p-4 lg:p-6 pb-24 lg:pb-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-            {greeting()}, <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{user?.name?.split(' ').pop() || 'bạn'}</span>
+            {greeting()}, <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">{user?.name?.split(' ').pop() || 'bạn'}</span> 👋
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
             Tháng {new Date(currentMonth + '-01').toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
           </p>
         </div>
         <Link to="/transactions">
-          <Button className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 text-white">
+          <Button className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 text-white transition-all hover:scale-105">
             <Plus className="w-4 h-4 mr-2" />
             Thêm giao dịch
           </Button>
         </Link>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards with Modern Design */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <Card className="bg-white dark:bg-gray-900/80 border-0 shadow-sm shadow-blue-100/50 dark:shadow-none rounded-2xl overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        {/* Total Balance Card */}
+        <Card className="relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-blue-950 border-0 shadow-lg shadow-blue-100/50 dark:shadow-none rounded-2xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 relative z-10">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
               Tổng tài sản
             </CardTitle>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-              <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center backdrop-blur-sm">
+              <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-              {formatShortCurrency(balance?.totalBalance || 0)}
-              <span className="text-xs font-normal text-gray-400 ml-1">VNĐ</span>
+          <CardContent className="px-4 pb-4 relative z-10">
+            <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">
+              {formatShortCurrency(balance?.totalBalance || 0, false)}
             </p>
-            <p className="text-xs text-gray-400 mt-1">{balance?.accounts?.length || 0} tài khoản</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{balance?.accounts?.length || 0} tài khoản</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-900/80 border-0 shadow-sm shadow-green-100/50 dark:shadow-none rounded-2xl overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        {/* Income Card */}
+        <Card className="relative bg-gradient-to-br from-emerald-50 to-green-50 dark:from-gray-900 dark:to-emerald-950 border-0 shadow-lg shadow-emerald-100/50 dark:shadow-none rounded-2xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/20 to-green-400/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 relative z-10">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               Thu nhập
             </CardTitle>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-              <ArrowUpCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center backdrop-blur-sm">
+              <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <p className="text-xl lg:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              +{formatShortCurrency(dashboardData?.income || 0)}
+          <CardContent className="px-4 pb-4 relative z-10">
+            <p className="text-2xl lg:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+              +{formatShortCurrency(dashboardData?.income || 0, false)}
             </p>
-            <p className="text-xs text-gray-400 mt-1">Tháng này</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Tháng này</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-900/80 border-0 shadow-sm shadow-red-100/50 dark:shadow-none rounded-2xl overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        {/* Expense Card */}
+        <Card className="relative bg-gradient-to-br from-red-50 to-pink-50 dark:from-gray-900 dark:to-red-950 border-0 shadow-lg shadow-red-100/50 dark:shadow-none rounded-2xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-400/20 to-pink-400/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 relative z-10">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
               Chi tiêu
             </CardTitle>
-            <div className="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
-              <ArrowDownCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
+            <div className="w-10 h-10 rounded-xl bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center backdrop-blur-sm">
+              <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <p className="text-xl lg:text-2xl font-bold text-red-500 dark:text-red-400">
-              -{formatShortCurrency(dashboardData?.expense || 0)}
+          <CardContent className="px-4 pb-4 relative z-10">
+            <p className="text-2xl lg:text-3xl font-bold text-red-600 dark:text-red-400 mb-1">
+              -{formatShortCurrency(dashboardData?.expense || 0, false)}
             </p>
-            <p className="text-xs text-gray-400 mt-1">Tháng này</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Tháng này</p>
           </CardContent>
         </Card>
 
-        <Card className={`bg-white dark:bg-gray-900/80 border-0 shadow-sm rounded-2xl overflow-hidden ${
-          savingsRate >= 0 ? 'shadow-violet-100/50' : 'shadow-orange-100/50'
-        } dark:shadow-none`}>
-          <div className="absolute top-0 right-0 w-20 h-20 bg-violet-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        {/* Savings Card */}
+        <Card className={`relative bg-gradient-to-br ${
+          savingsRate >= 0 
+            ? 'from-violet-50 to-purple-50 dark:from-gray-900 dark:to-violet-950 shadow-violet-100/50' 
+            : 'from-orange-50 to-amber-50 dark:from-gray-900 dark:to-orange-950 shadow-orange-100/50'
+        } border-0 shadow-lg dark:shadow-none rounded-2xl overflow-hidden group hover:shadow-xl transition-all duration-300`}>
+          <div className={`absolute top-0 right-0 w-32 h-32 ${
+            savingsRate >= 0 
+              ? 'bg-gradient-to-br from-violet-400/20 to-purple-400/20' 
+              : 'bg-gradient-to-br from-orange-400/20 to-amber-400/20'
+          } rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500`} />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 relative z-10">
+            <CardTitle className={`text-xs font-semibold uppercase tracking-wider ${
+              savingsRate >= 0 
+                ? 'text-violet-600 dark:text-violet-400' 
+                : 'text-orange-600 dark:text-orange-400'
+            }`}>
               Tiết kiệm
             </CardTitle>
-            <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+            <div className={`w-10 h-10 rounded-xl ${
+              savingsRate >= 0 
+                ? 'bg-violet-500/10 dark:bg-violet-500/20' 
+                : 'bg-orange-500/10 dark:bg-orange-500/20'
+            } flex items-center justify-center backdrop-blur-sm`}>
+              <Target className={`w-5 h-5 ${
+                savingsRate >= 0 
+                  ? 'text-violet-600 dark:text-violet-400' 
+                  : 'text-orange-600 dark:text-orange-400'
+              }`} />
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <p className={`text-xl lg:text-2xl font-bold ${savingsRate >= 0 ? 'text-violet-600 dark:text-violet-400' : 'text-orange-500'}`}>
+          <CardContent className="px-4 pb-4 relative z-10">
+            <p className={`text-2xl lg:text-3xl font-bold mb-1 ${
+              savingsRate >= 0 
+                ? 'text-violet-600 dark:text-violet-400' 
+                : 'text-orange-600 dark:text-orange-400'
+            }`}>
               {savingsRate.toFixed(1)}%
             </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {savingsRate >= 20 ? 'Xuất sắc!' : savingsRate >= 10 ? 'Tốt' : 'Cần cải thiện'}
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {savingsRate >= 20 ? '🎯 Xuất sắc!' : savingsRate >= 10 ? '👍 Tốt' : '💪 Cần cải thiện'}
             </p>
           </CardContent>
         </Card>
@@ -232,47 +252,54 @@ export function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Trend Chart */}
-        <Card className="lg:col-span-2 bg-white dark:bg-gray-900/80 border-0 shadow-sm rounded-2xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <BarChart3 className="w-5 h-5 text-indigo-500" />
-              Thu - Chi 6 tháng
+        <Card className="lg:col-span-2 bg-white dark:bg-gray-900/80 border-0 shadow-lg rounded-2xl overflow-hidden">
+          <CardHeader className="pb-2 border-b border-gray-100 dark:border-gray-800">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-white" />
+              </div>
+              Thu - Chi 6 tháng gần đây
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop key="income-stop-0" offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop key="income-stop-100" offset="100%" stopColor="#10b981" stopOpacity={0} />
+                    <stop key="income-stop-0" offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop key="income-stop-100" offset="100%" stopColor="#10b981" stopOpacity={0.05} />
                   </linearGradient>
                   <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop key="expense-stop-0" offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop key="expense-stop-100" offset="100%" stopColor="#ef4444" stopOpacity={0} />
+                    <stop key="expense-stop-0" offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
+                    <stop key="expense-stop-100" offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
-                <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={formatShortCurrency} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.3} />
+                <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(val) => formatShortCurrency(val, false)} />
                 <Tooltip
                   formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                 />
-                <Legend />
-                <Area key="income-area" type="monotone" dataKey="income" stroke="#10b981" fill="url(#incomeGrad)" strokeWidth={2.5} name="Thu nhập" dot={false} />
-                <Area key="expense-area" type="monotone" dataKey="expense" stroke="#ef4444" fill="url(#expenseGrad)" strokeWidth={2.5} name="Chi tiêu" dot={false} />
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Area key="income-area" type="monotone" dataKey="income" stroke="#10b981" fill="url(#incomeGrad)" strokeWidth={3} name="Thu nhập" dot={false} />
+                <Area key="expense-area" type="monotone" dataKey="expense" stroke="#ef4444" fill="url(#expenseGrad)" strokeWidth={3} name="Chi tiêu" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Pie Chart */}
-        <Card className="bg-white dark:bg-gray-900/80 border-0 shadow-sm rounded-2xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Phân bổ chi tiêu</CardTitle>
+        <Card className="bg-white dark:bg-gray-900/80 border-0 shadow-lg rounded-2xl overflow-hidden">
+          <CardHeader className="pb-2 border-b border-gray-100 dark:border-gray-800">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
+                <Activity className="w-4 h-4 text-white" />
+              </div>
+              Phân bổ chi tiêu
+            </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-4">
             {pieChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
@@ -280,9 +307,9 @@ export function Dashboard() {
                     data={pieChartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={4}
+                    innerRadius={60}
+                    outerRadius={95}
+                    paddingAngle={5}
                     dataKey="value"
                     strokeWidth={0}
                   >
