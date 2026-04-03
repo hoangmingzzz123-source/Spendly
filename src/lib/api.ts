@@ -1,4 +1,16 @@
 import { apiRequest } from './supabase';
+import { useStore } from './store';
+import { getSampleDashboardData, getSampleAccounts, getSampleCategories, getSampleTransactions, getSampleBudgets, getSampleGoals, getSampleReminders } from './sampleData';
+
+// Helper to check if in demo mode and return sample data
+const handleDemoMode = <T>(apiCall: () => Promise<T>, sampleData: T): Promise<T> => {
+  const { isDemo } = useStore.getState();
+  if (isDemo) {
+    console.log('[API] Demo mode: returning sample data');
+    return Promise.resolve(sampleData);
+  }
+  return apiCall();
+};
 
 // Auth
 export const authApi = {
@@ -17,7 +29,7 @@ export const authApi = {
 
 // Accounts
 export const accountsApi = {
-  getAll: () => apiRequest('/accounts'),
+  getAll: () => handleDemoMode(() => apiRequest('/accounts'), getSampleAccounts()),
   create: (data: any) => apiRequest('/accounts', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -29,12 +41,15 @@ export const accountsApi = {
   delete: (id: string) => apiRequest(`/accounts/${id}`, {
     method: 'DELETE',
   }),
-  getBalance: () => apiRequest('/accounts/balance'),
+  getBalance: () => handleDemoMode(
+    () => apiRequest('/accounts/balance'),
+    { totalIncome: 45000000, totalExpense: 22500000, balance: 22500000 }
+  ),
 };
 
 // Categories
 export const categoriesApi = {
-  getAll: () => apiRequest('/categories'),
+  getAll: () => handleDemoMode(() => apiRequest('/categories'), getSampleCategories()),
   create: (data: any) => apiRequest('/categories', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -50,7 +65,7 @@ export const transactionsApi = {
     if (params?.category_id) queryParams.append('category_id', params.category_id);
     
     const query = queryParams.toString();
-    return apiRequest(`/transactions${query ? `?${query}` : ''}`);
+    return handleDemoMode(() => apiRequest(`/transactions${query ? `?${query}` : ''}`), getSampleTransactions());
   },
   
   getById: (id: string) => apiRequest(`/transactions/${id}`),
@@ -69,7 +84,11 @@ export const transactionsApi = {
 export const dashboardApi = {
   getSummary: (month?: string) => {
     const params = month ? `?month=${month}` : '';
-    return apiRequest(`/dashboard/summary${params}`);
+    const currentMonth = month || new Date().toISOString().slice(0, 7);
+    return handleDemoMode(
+      () => apiRequest(`/dashboard/summary${params}`), 
+      getSampleDashboardData(currentMonth)
+    );
   },
 };
 
@@ -86,7 +105,7 @@ export const timelineApi = {
 export const budgetsApi = {
   getAll: (month?: string) => {
     const params = month ? `?month=${month}` : '';
-    return apiRequest(`/budgets${params}`);
+    return handleDemoMode(() => apiRequest(`/budgets${params}`), getSampleBudgets());
   },
   create: (data: any) => apiRequest('/budgets', {
     method: 'POST',
@@ -103,7 +122,7 @@ export const budgetsApi = {
 
 // Savings Goals
 export const goalsApi = {
-  getAll: () => apiRequest('/goals'),
+  getAll: () => handleDemoMode(() => apiRequest('/goals'), getSampleGoals()),
   create: (data: any) => apiRequest('/goals', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -123,7 +142,7 @@ export const goalsApi = {
 
 // Reminders
 export const remindersApi = {
-  getAll: () => apiRequest('/reminders'),
+  getAll: () => handleDemoMode(() => apiRequest('/reminders'), getSampleReminders()),
   create: (data: any) => apiRequest('/reminders', {
     method: 'POST',
     body: JSON.stringify(data),

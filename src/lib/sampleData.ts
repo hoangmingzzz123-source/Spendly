@@ -181,3 +181,173 @@ export const getSampleDataSummary = () => {
     reminders: SAMPLE_REMINDERS.length,
   };
 };
+
+// Demo Mode: Sample data functions
+export const getSampleAccounts = () => {
+  return [
+    {
+      id: 'acc-1',
+      name: 'Tiền mặt',
+      type: 'CASH',
+      balance: 5000000,
+      color: '#10B981',
+      icon: '💵',
+      isDefault: true,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'acc-2',
+      name: 'Techcombank',
+      type: 'BANK',
+      balance: 15000000,
+      color: '#3B82F6',
+      icon: '🏦',
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'acc-3',
+      name: 'Ví Momo',
+      type: 'EWALLET',
+      balance: 2500000,
+      color: '#EC4899',
+      icon: '📱',
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+};
+
+export const getSampleCategories = () => {
+  const expenseCategories = SAMPLE_CATEGORIES.EXPENSE.map((cat, idx) => ({
+    id: `cat-exp-${idx}`,
+    name: cat.name,
+    type: 'EXPENSE' as const,
+    color: cat.color,
+    icon: '📊',
+    parentId: null,
+    createdAt: new Date().toISOString(),
+  }));
+
+  const incomeCategories = SAMPLE_CATEGORIES.INCOME.map((cat, idx) => ({
+    id: `cat-inc-${idx}`,
+    name: cat.name,
+    type: 'INCOME' as const,
+    color: cat.color,
+    icon: '💰',
+    parentId: null,
+    createdAt: new Date().toISOString(),
+  }));
+
+  return [...expenseCategories, ...incomeCategories];
+};
+
+export const getSampleTransactions = () => {
+  const now = new Date();
+  const categories = getSampleCategories();
+  const accounts = getSampleAccounts();
+
+  return [
+    {
+      id: 'txn-1',
+      type: 'EXPENSE',
+      amount: 150000,
+      categoryId: categories[0].id, // Ăn uống
+      accountId: accounts[0].id,
+      date: new Date(now.setDate(now.getDate() - 1)).toISOString(),
+      description: 'Ăn trưa',
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'txn-2',
+      type: 'EXPENSE',
+      amount: 50000,
+      categoryId: categories[0].id,
+      accountId: accounts[0].id,
+      date: new Date(now.setDate(now.getDate() - 1)).toISOString(),
+      description: 'Cà phê sáng',
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'txn-3',
+      type: 'INCOME',
+      amount: 15000000,
+      categoryId: categories.find(c => c.name === 'Lương')?.id || 'cat-inc-0',
+      accountId: accounts[1].id,
+      date: new Date(now.setDate(1)).toISOString(),
+      description: 'Lương tháng',
+      createdAt: new Date().toISOString(),
+    },
+  ];
+};
+
+export const getSampleBudgets = () => {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const categories = getSampleCategories();
+
+  return SAMPLE_BUDGET_TEMPLATES.map((template, idx) => {
+    const category = categories.find(c => c.name === template.name);
+    return {
+      id: `budget-${idx}`,
+      name: template.name,
+      amount: template.amount,
+      spent: Math.floor(template.amount * (Math.random() * 0.7 + 0.1)), // Random 10-80%
+      categoryId: category?.id || null,
+      month: currentMonth,
+      icon: template.emoji,
+      color: category?.color || '#6B7280',
+      createdAt: new Date().toISOString(),
+    };
+  });
+};
+
+export const getSampleGoals = () => {
+  return SAMPLE_GOALS.map((goal, idx) => ({
+    id: `goal-${idx}`,
+    name: goal.name,
+    targetAmount: goal.targetAmount,
+    currentAmount: Math.floor(goal.targetAmount * (Math.random() * 0.5)), // Random 0-50%
+    deadline: goal.deadline,
+    icon: goal.icon,
+    color: goal.color,
+    status: 'IN_PROGRESS' as const,
+    createdAt: new Date().toISOString(),
+  }));
+};
+
+export const getSampleReminders = () => {
+  return SAMPLE_REMINDERS.map((reminder, idx) => ({
+    id: `reminder-${idx}`,
+    title: reminder.title,
+    type: reminder.type,
+    frequency: reminder.frequency,
+    dayOfMonth: reminder.dayOfMonth,
+    time: reminder.time,
+    amount: reminder.amount,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  }));
+};
+
+export const getSampleDashboardData = (month: string) => {
+  const budgets = getSampleBudgets();
+  const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
+  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
+
+  return {
+    totalIncome: 45000000,
+    totalExpense: totalSpent,
+    balance: 45000000 - totalSpent,
+    budgetUsage: (totalSpent / totalBudget) * 100,
+    topCategories: [
+      { name: 'Ăn uống', amount: 4500000, color: '#EF4444' },
+      { name: 'Di chuyển', amount: 1800000, color: '#F59E0B' },
+      { name: 'Mua sắm', amount: 2200000, color: '#EC4899' },
+    ],
+    recentTransactions: getSampleTransactions().slice(0, 5),
+    monthlyComparison: {
+      income: { current: 45000000, previous: 42000000, change: 7.1 },
+      expense: { current: totalSpent, previous: 18000000, change: 25.0 },
+    },
+  };
+};

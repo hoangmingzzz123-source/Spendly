@@ -31,7 +31,7 @@ import {
 export function Root() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { accessToken, user, theme, setTheme, logout, setAccessToken, setUser } = useStore();
+  const { accessToken, user, theme, setTheme, logout, setAccessToken, setUser, isDemo } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -50,6 +50,13 @@ export function Root() {
   // On mount, restore Supabase session and sync token to Zustand
   useEffect(() => {
     const restoreSession = async () => {
+      // Skip session restoration in demo mode
+      if (isDemo) {
+        console.log('[Root] Demo mode active - skipping session restoration');
+        setIsInitializing(false);
+        return;
+      }
+      
       console.log('[Root] Starting session restoration...');
       await ensureSessionRestored();
       try {
@@ -236,9 +243,16 @@ export function Root() {
                 <Wallet className="w-5 h-5 text-white" />
               </div>
               {!sidebarCollapsed && (
-                <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent truncate">
-                  Spendly
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent truncate">
+                    Spendly
+                  </span>
+                  {isDemo && (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                      Demo Mode
+                    </span>
+                  )}
+                </div>
               )}
             </div>
             <button
@@ -323,9 +337,16 @@ export function Root() {
               <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-indigo-500/25">
                 <Wallet className="w-5 h-5 text-white" />
               </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Spendly
-              </span>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent leading-none">
+                  Spendly
+                </span>
+                {isDemo && (
+                  <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide leading-none mt-0.5">
+                    Demo Mode
+                  </span>
+                )}
+              </div>
             </div>
             
             <button

@@ -1,0 +1,444 @@
+[Config] API_BASE: https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Config] Project ID: mhzssoishpipiypwuupx
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Starting session restoration...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Auth state changed: INITIAL_SESSION
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] No session found on mount
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ✅ Initialization complete
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ⚠️ No access token on protected route, redirecting to login
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Config] API_BASE: https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Config] Project ID: mhzssoishpipiypwuupx
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Starting session restoration...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Auth state changed: INITIAL_SESSION
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] No session found on mount
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ✅ Initialization complete
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ⚠️ No access token on protected route, redirecting to login
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Login] Starting login process...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Login] ✅ Login successful, session created
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Login] ✅ Token persisted to localStorage
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Login] ✅ Navigating to dashboard...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Starting session restoration...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Auth state changed: INITIAL_SESSION
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ✅ Session restored successfully for user: a45bcf81-8e94-4b75-8e83-82788ae13dd9
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ✅ Token persisted to localStorage
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ✅ Initialization complete
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [API] ✅ Token retrieved for /dashboard/summary?month=2026-04, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [API] Request /dashboard/summary?month=2026-04, using access_token, retry: 0, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [API] ✅ Token retrieved for /accounts/balance, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [API] Request /accounts/balance, using access_token, retry: 0, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+supabase.ts:273  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/dashboard/summary?month=2026-04 401 (Unauthorized)
+apiRequest @ supabase.ts:273
+await in apiRequest
+(anonymous) @ api.ts:89
+handleDemoMode @ api.ts:12
+getSummary @ api.ts:88
+queryFn @ Dashboard.tsx:41
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/dashboard/summary?month=2026-04 401 (Unauthorized)
+apiRequest @ app-jvsarhkdjvtl6xgb…t=1775159024107:204
+await in apiRequest
+(anonymous) @ app-jvsarhkdjvtl6xgb…?t=1775159437814:70
+handleDemoMode @ app-jvsarhkdjvtl6xgb…?t=1775159437814:10
+getSummary @ app-jvsarhkdjvtl6xgb…?t=1775159437814:69
+queryFn @ app-jvsarhkdjvtl6xgb…?t=1775159437814:56
+fetchFn @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1142
+run @ app-jvsarhkdjvtl6xgb…y.js?v=0181dffe:835
+start @ app-jvsarhkdjvtl6xgb…y.js?v=0181dffe:878
+fetch @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1189
+executeFetch_fn @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1699
+onSubscribe @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1390
+subscribe @ app-jvsarhkdjvtl6xgb…ry.js?v=0181dffe:17
+(anonymous) @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 [API] ❌ 401 /dashboard/summary?month=2026-04 {code: 401, message: 'Invalid JWT'}
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+error @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+apiRequest @ supabase.ts:284
+await in apiRequest
+(anonymous) @ api.ts:89
+handleDemoMode @ api.ts:12
+getSummary @ api.ts:88
+queryFn @ Dashboard.tsx:41
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 [API] 401 received, attempting session refresh and retry...
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+warn @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+apiRequest @ supabase.ts:288
+await in apiRequest
+(anonymous) @ api.ts:89
+handleDemoMode @ api.ts:12
+getSummary @ api.ts:88
+queryFn @ Dashboard.tsx:41
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this warning
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 [API] ❌ Token is corrupted (Invalid JWT), forcing complete sign out...
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+error @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+apiRequest @ supabase.ts:294
+await in apiRequest
+(anonymous) @ api.ts:89
+handleDemoMode @ api.ts:12
+getSummary @ api.ts:88
+queryFn @ Dashboard.tsx:41
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] Force sign out - clearing all session data
+supabase.ts:273  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/accounts/balance 401 (Unauthorized)
+apiRequest @ supabase.ts:273
+await in apiRequest
+handleDemoMode.totalIncome @ api.ts:45
+handleDemoMode @ api.ts:12
+getBalance @ api.ts:44
+queryFn @ Dashboard.tsx:47
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/accounts/balance 401 (Unauthorized)
+apiRequest @ app-jvsarhkdjvtl6xgb…t=1775159024107:204
+await in apiRequest
+handleDemoMode.totalIncome @ app-jvsarhkdjvtl6xgb…?t=1775159437814:36
+handleDemoMode @ app-jvsarhkdjvtl6xgb…?t=1775159437814:10
+getBalance @ app-jvsarhkdjvtl6xgb…?t=1775159437814:35
+queryFn @ app-jvsarhkdjvtl6xgb…?t=1775159437814:61
+fetchFn @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1142
+run @ app-jvsarhkdjvtl6xgb…y.js?v=0181dffe:835
+start @ app-jvsarhkdjvtl6xgb…y.js?v=0181dffe:878
+fetch @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1189
+executeFetch_fn @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1699
+onSubscribe @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:1390
+subscribe @ app-jvsarhkdjvtl6xgb…ry.js?v=0181dffe:17
+(anonymous) @ app-jvsarhkdjvtl6xgb….js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 [API] ❌ 401 /accounts/balance {code: 401, message: 'Invalid JWT'}
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+error @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+apiRequest @ supabase.ts:284
+await in apiRequest
+handleDemoMode.totalIncome @ api.ts:45
+handleDemoMode @ api.ts:12
+getBalance @ api.ts:44
+queryFn @ Dashboard.tsx:47
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 [API] 401 received, attempting session refresh and retry...
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+warn @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+apiRequest @ supabase.ts:288
+await in apiRequest
+handleDemoMode.totalIncome @ api.ts:45
+handleDemoMode @ api.ts:12
+getBalance @ api.ts:44
+queryFn @ Dashboard.tsx:47
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this warning
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 [API] ❌ Token is corrupted (Invalid JWT), forcing complete sign out...
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+error @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+apiRequest @ supabase.ts:294
+await in apiRequest
+handleDemoMode.totalIncome @ api.ts:45
+handleDemoMode @ api.ts:12
+getBalance @ api.ts:44
+queryFn @ Dashboard.tsx:47
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] Force sign out - clearing all session data
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Auth state changed: SIGNED_OUT
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] SIGNED_OUT event - clearing store
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] ⚠️ No access token on protected route, redirecting to login
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] Auth state changed: SIGNED_OUT
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Root] SIGNED_OUT event - clearing store
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: access_token
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: spendly_user
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: spendly-auth
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: sb-access-token
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: sb-refresh-token
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ All session data cleared
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 Query data cannot be undefined. Please make sure to return a value other than undefined from your query function. Affected query key: ["accounts","balance"]
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+error @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+fetch @ @tanstack_react-query.js?v=0181dffe:1192
+await in fetch
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: access_token
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: spendly_user
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: spendly-auth
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: sb-access-token
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ Removed: sb-refresh-token
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Supabase] ✅ All session data cleared
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17 Query data cannot be undefined. Please make sure to return a value other than undefined from your query function. Affected query key: ["dashboard","2026-04"]
+r @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:17
+error @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90
+fetch @ @tanstack_react-query.js?v=0181dffe:1192
+await in fetch
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+TO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T8 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T7 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T6 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+T4 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+S1 @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SQ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+pC @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SZ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SJ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+Sv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SS @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:65
+V @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+B @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61
+eo @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:61Understand this error
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Config] API_BASE: https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c
+code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:90 [Config] Project ID: mhzssoishpipiypwuupx

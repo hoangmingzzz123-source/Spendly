@@ -1,20 +1,38 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useStore } from '../../lib/store';
-import { supabase, markLoginSuccess } from '../../lib/supabase';
+import { authApi } from '../../lib/api';
+import { supabase, markLoginSuccess, API_BASE } from '../../lib/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
-import { Wallet, Loader2, Eye, EyeOff, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react';
+import { Wallet, Loader2, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
 
 export function Login() {
   const navigate = useNavigate();
-  const { setUser, setAccessToken } = useStore();
+  const { setUser, setAccessToken, setDemo } = useStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const handleDemoMode = () => {
+    console.log('[Login] Activating Demo Mode...');
+    // Set demo user
+    const demoUser = {
+      id: 'demo-user-123',
+      email: 'demo@spendly.com',
+      name: 'Demo User',
+    };
+    
+    setUser(demoUser);
+    setAccessToken('demo-token');
+    setDemo(true); // Enable demo mode
+    
+    toast.success('🎉 Chào mừng đến Demo Mode! Dữ liệu mẫu đã được kích hoạt.');
+    navigate('/');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,9 +114,9 @@ export function Login() {
 
             <div className="grid grid-cols-3 gap-4">
               {[
-                { icon: Sparkles, label: 'AI Tư vấn', desc: 'Gemini miễn phí' },
-                { icon: Shield, label: 'Bảo mật', desc: 'Supabase Auth' },
-                { icon: Zap, label: 'Tức thì', desc: 'Real-time sync' },
+                { icon: CheckCircle2, label: 'AI Tư vấn', desc: 'Gemini miễn phí' },
+                { icon: AlertCircle, label: 'Bảo mật', desc: 'Supabase Auth' },
+                { icon: RefreshCw, label: 'Tức thì', desc: 'Real-time sync' },
               ].map((f) => (
                 <div key={f.label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
                   <f.icon className="w-6 h-6 mb-2" />
@@ -130,9 +148,68 @@ export function Login() {
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
               Chào mừng trở lại
             </h2>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">
-              Đăng nhập để tiếp tục quản lý tài chính
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Đăng nhập để quản lý tài chính của bạn
             </p>
+            
+            {/* Debug button - only show in dev */}
+            <button
+              onClick={async () => {
+                console.group('🔧 System Diagnostic');
+                try {
+                  // Test 1: Backend health
+                  console.log('\n1️⃣ Testing backend health...');
+                  const healthRes = await fetch(`https://${(window as any).projectId || 'unknown'}.supabase.co/functions/v1/make-server-f5f5b39c/health`);
+                  console.log('Backend status:', healthRes.ok ? '✅ ONLINE' : '❌ OFFLINE');
+                  if (healthRes.ok) {
+                    const health = await healthRes.json();
+                    console.log('Health data:', health);
+                  }
+                  
+                  // Test 2: Backend env
+                  console.log('\n2️⃣ Testing backend environment...');
+                  const envRes = await fetch(`https://${(window as any).projectId || 'unknown'}.supabase.co/functions/v1/make-server-f5f5b39c/debug/env`);
+                  if (envRes.ok) {
+                    const env = await envRes.json();
+                    console.log('Backend env:', env);
+                  } else {
+                    console.error('❌ Env check failed:', await envRes.text());
+                  }
+                  
+                  // Test 3: Token status
+                  console.log('\n3️⃣ Checking local token...');
+                  await (window as any).debugToken();
+                  
+                  // Test 4: Backend token validation
+                  console.log('\n4️⃣ Testing backend token validation...');
+                  const accessToken = localStorage.getItem('access_token');
+                  if (accessToken) {
+                    const tokenRes = await fetch(`https://${(window as any).projectId || 'unknown'}.supabase.co/functions/v1/make-server-f5f5b39c/debug/token`, {
+                      headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                      },
+                    });
+                    if (tokenRes.ok) {
+                      const tokenData = await tokenRes.json();
+                      console.log('✅ Backend token validation:', tokenData);
+                    } else {
+                      const tokenError = await tokenRes.json().catch(() => ({ error: 'Unknown error' }));
+                      console.error('❌ Backend token validation failed:', tokenError);
+                    }
+                  } else {
+                    console.warn('⚠️ No access token in localStorage');
+                  }
+                  
+                  console.log('\n✅ Diagnostic complete!');
+                } catch (err) {
+                  console.error('❌ Diagnostic failed:', err);
+                }
+                console.groupEnd();
+              }}
+              className="mt-3 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              🔧 Run System Diagnostic
+            </button>
           </div>
 
           {/* Info banner for session issues */}
@@ -223,6 +300,26 @@ export function Login() {
               Đăng ký miễn phí
             </Link>
           </div>
+
+          {/* Demo Mode Button */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-slate-50 dark:bg-gray-900 text-gray-500">hoặc</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDemoMode}
+            className="w-full h-12 rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 hover:from-amber-100 hover:to-yellow-100 dark:hover:from-amber-900/30 dark:hover:to-yellow-900/30 text-amber-900 dark:text-amber-400 font-semibold shadow-sm transition-all duration-200"
+          >
+            <Sparkles className="w-5 h-5 mr-2" />
+            Thử Demo Mode
+          </Button>
         </div>
       </div>
     </div>

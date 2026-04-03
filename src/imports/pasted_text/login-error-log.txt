@@ -1,0 +1,424 @@
+Login.tsx:29  POST https://mhzssoishpipiypwuupx.supabase.co/auth/v1/token?grant_type=password 400 (Bad Request)
+(anonymous) @ @supabase_supabase-js.js?v=abc701fc:12278
+_handleRequest2 @ @supabase_supabase-js.js?v=abc701fc:12568
+_request @ @supabase_supabase-js.js?v=abc701fc:12558
+signInWithPassword @ @supabase_supabase-js.js?v=abc701fc:15346
+handleSubmit @ Login.tsx:29
+y @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25
+ik @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25
+iz @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25
+i$ @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25
+dP @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+dM @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+dG @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+dk @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+(anonymous) @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+SR @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+iR @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25
+dj @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:37
+lN @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25
+lO @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25
+lv @ code_components_preview_iframe-f7eb2aa617f22c1a.min.js.br:25Understand this error
+  POST https://mhzssoishpipiypwuupx.supabase.co/auth/v1/token?grant_type=password 400 (Bad Request)
+(anonymous) @ @supabase_supabase-j…js?v=abc701fc:12278
+_handleRequest2 @ @supabase_supabase-j…js?v=abc701fc:12568
+_request @ @supabase_supabase-j…js?v=abc701fc:12558
+signInWithPassword @ @supabase_supabase-j…js?v=abc701fc:15346
+handleSubmit @ Login.tsx?t=1775159024107:41
+y @ code_components_prev…f22c1a.min.js.br:25
+ik @ code_components_prev…f22c1a.min.js.br:25
+iz @ code_components_prev…f22c1a.min.js.br:25
+i$ @ code_components_prev…f22c1a.min.js.br:25
+dP @ code_components_prev…f22c1a.min.js.br:37
+dM @ code_components_prev…f22c1a.min.js.br:37
+dG @ code_components_prev…f22c1a.min.js.br:37
+dk @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:37
+SR @ code_components_prev…f22c1a.min.js.br:37
+iR @ code_components_prev…f22c1a.min.js.br:25
+dj @ code_components_prev…f22c1a.min.js.br:37
+lN @ code_components_prev…f22c1a.min.js.br:25
+lO @ code_components_prev…f22c1a.min.js.br:25
+lv @ code_components_prev…f22c1a.min.js.br:25Understand this error
+ [Login] Starting login process...
+ [Login] ✅ Login successful, session created
+ [Login] ✅ Token persisted to localStorage
+ [Login] ✅ Navigating to dashboard...
+ [Root] Starting session restoration...
+ [Root] Auth state changed: INITIAL_SESSION
+ [Root] ✅ Session restored successfully for user: a45bcf81-8e94-4b75-8e83-82788ae13dd9
+ [Root] ✅ Token persisted to localStorage
+ [Root] ✅ Initialization complete
+ [API] ✅ Token retrieved for /dashboard/summary?month=2026-04, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+ [API] Request /dashboard/summary?month=2026-04, using access_token, retry: 0, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+ [API] ✅ Token retrieved for /accounts/balance, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+ [API] Request /accounts/balance, using access_token, retry: 0, token prefix: eyJhbGciOiJFUzI1NiIsImtpZCI6Im...
+  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/dashboard/summary?month=2026-04 401 (Unauthorized)
+apiRequest @ supabase.ts?t=1775159024107:204
+await in apiRequest
+getSummary @ api.ts?t=1775159024107:55
+queryFn @ Dashboard.tsx?t=1775159024107:56
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/dashboard/summary?month=2026-04 401 (Unauthorized)
+apiRequest @ supabase.ts?t=1775159024107:204
+await in apiRequest
+getSummary @ api.ts?t=1775159024107:55
+queryFn @ Dashboard.tsx?t=1775159024107:56
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+ [API] ❌ 401 /dashboard/summary?month=2026-04 {code: 401, message: 'Invalid JWT'}
+r @ code_components_prev…f22c1a.min.js.br:17
+error @ code_components_prev…f22c1a.min.js.br:90
+apiRequest @ supabase.ts?t=1775159024107:214
+await in apiRequest
+getSummary @ api.ts?t=1775159024107:55
+queryFn @ Dashboard.tsx?t=1775159024107:56
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+ [API] 401 received, attempting session refresh and retry...
+r @ code_components_prev…f22c1a.min.js.br:17
+warn @ code_components_prev…f22c1a.min.js.br:90
+apiRequest @ supabase.ts?t=1775159024107:216
+await in apiRequest
+getSummary @ api.ts?t=1775159024107:55
+queryFn @ Dashboard.tsx?t=1775159024107:56
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this warning
+ [API] ❌ Token is corrupted (Invalid JWT), forcing complete sign out...
+r @ code_components_prev…f22c1a.min.js.br:17
+error @ code_components_prev…f22c1a.min.js.br:90
+apiRequest @ supabase.ts?t=1775159024107:219
+await in apiRequest
+getSummary @ api.ts?t=1775159024107:55
+queryFn @ Dashboard.tsx?t=1775159024107:56
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+ [Supabase] Force sign out - clearing all session data
+  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/accounts/balance 401 (Unauthorized)
+apiRequest @ supabase.ts?t=1775159024107:204
+await in apiRequest
+getBalance @ api.ts?t=1775159024107:25
+queryFn @ Dashboard.tsx?t=1775159024107:61
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+  GET https://mhzssoishpipiypwuupx.supabase.co/functions/v1/make-server-f5f5b39c/accounts/balance 401 (Unauthorized)
+apiRequest @ supabase.ts?t=1775159024107:204
+await in apiRequest
+getBalance @ api.ts?t=1775159024107:25
+queryFn @ Dashboard.tsx?t=1775159024107:61
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+ [API] ❌ 401 /accounts/balance {code: 401, message: 'Invalid JWT'}
+r @ code_components_prev…f22c1a.min.js.br:17
+error @ code_components_prev…f22c1a.min.js.br:90
+apiRequest @ supabase.ts?t=1775159024107:214
+await in apiRequest
+getBalance @ api.ts?t=1775159024107:25
+queryFn @ Dashboard.tsx?t=1775159024107:61
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+ [API] 401 received, attempting session refresh and retry...
+r @ code_components_prev…f22c1a.min.js.br:17
+warn @ code_components_prev…f22c1a.min.js.br:90
+apiRequest @ supabase.ts?t=1775159024107:216
+await in apiRequest
+getBalance @ api.ts?t=1775159024107:25
+queryFn @ Dashboard.tsx?t=1775159024107:61
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this warning
+ [API] ❌ Token is corrupted (Invalid JWT), forcing complete sign out...
+r @ code_components_prev…f22c1a.min.js.br:17
+error @ code_components_prev…f22c1a.min.js.br:90
+apiRequest @ supabase.ts?t=1775159024107:219
+await in apiRequest
+getBalance @ api.ts?t=1775159024107:25
+queryFn @ Dashboard.tsx?t=1775159024107:61
+fetchFn @ @tanstack_react-query.js?v=0181dffe:1142
+run @ @tanstack_react-query.js?v=0181dffe:835
+start @ @tanstack_react-query.js?v=0181dffe:878
+fetch @ @tanstack_react-query.js?v=0181dffe:1189
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+ [Supabase] Force sign out - clearing all session data
+ [Root] Auth state changed: SIGNED_OUT
+ [Root] SIGNED_OUT event - clearing store
+ [Root] ⚠️ No access token on protected route, redirecting to login
+ [Root] Auth state changed: SIGNED_OUT
+ [Root] SIGNED_OUT event - clearing store
+ [Supabase] ✅ Removed: access_token
+ [Supabase] ✅ Removed: spendly_user
+ [Supabase] ✅ Removed: spendly-auth
+ [Supabase] ✅ Removed: sb-access-token
+ [Supabase] ✅ Removed: sb-refresh-token
+ [Supabase] ✅ All session data cleared
+ Query data cannot be undefined. Please make sure to return a value other than undefined from your query function. Affected query key: ["accounts","balance"]
+r @ code_components_prev…f22c1a.min.js.br:17
+error @ code_components_prev…f22c1a.min.js.br:90
+fetch @ @tanstack_react-query.js?v=0181dffe:1192
+await in fetch
+executeFetch_fn @ @tanstack_react-query.js?v=0181dffe:1699
+onSubscribe @ @tanstack_react-query.js?v=0181dffe:1390
+subscribe @ @tanstack_react-query.js?v=0181dffe:17
+(anonymous) @ @tanstack_react-query.js?v=0181dffe:3403
+mv @ code_components_prev…f22c1a.min.js.br:37
+TO @ code_components_prev…f22c1a.min.js.br:37
+T8 @ code_components_prev…f22c1a.min.js.br:37
+T7 @ code_components_prev…f22c1a.min.js.br:37
+T6 @ code_components_prev…f22c1a.min.js.br:37
+T4 @ code_components_prev…f22c1a.min.js.br:37
+S1 @ code_components_prev…f22c1a.min.js.br:37
+SQ @ code_components_prev…f22c1a.min.js.br:37
+SN @ code_components_prev…f22c1a.min.js.br:37
+pC @ code_components_prev…f22c1a.min.js.br:37
+SZ @ code_components_prev…f22c1a.min.js.br:37
+SJ @ code_components_prev…f22c1a.min.js.br:37
+Sv @ code_components_prev…f22c1a.min.js.br:37
+SS @ code_components_prev…f22c1a.min.js.br:37
+(anonymous) @ code_components_prev…f22c1a.min.js.br:65
+V @ code_components_prev…f22c1a.min.js.br:61
+B @ code_components_prev…f22c1a.min.js.br:61
+eo @ code_components_prev…f22c1a.min.js.br:61Understand this error
+ [Supabase] ✅ Removed: access_token
+ [Supabase] ✅ Removed: spendly_user
+ [Supabase] ✅ Removed: spendly-auth
+ [Supabase] ✅ Removed: sb-access-token
+ [Supabase] ✅ Removed: sb-refresh-token
+ [Supabase] ✅ All session data cleared
+ Query data cannot be undefined. Please make sure to return a value other than undefined from your query function. Affected query key: ["dashboard","2026-04"]
