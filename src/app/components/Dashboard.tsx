@@ -264,27 +264,27 @@ export function Dashboard() {
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={trendData}>
-                <defs key="defs">
-                  <linearGradient key="grad-income" id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop key="stop-income-0" offset="0%" stopColor="#10b981" stopOpacity={0.4} />
-                    <stop key="stop-income-1" offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                <defs>
+                  <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop key="income-stop-0" offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop key="income-stop-100" offset="100%" stopColor="#10b981" stopOpacity={0.05} />
                   </linearGradient>
-                  <linearGradient key="grad-expense" id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop key="stop-expense-0" offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
-                    <stop key="stop-expense-1" offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
+                  <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop key="expense-stop-0" offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
+                    <stop key="expense-stop-100" offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid key="grid" strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.3} />
-                <XAxis key="xaxis" dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis key="yaxis" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(val) => formatShortCurrency(val, false)} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.3} />
+                <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(val) => formatShortCurrency(val, false)} />
                 <Tooltip
                   key="tooltip"
                   formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                 />
-                <Legend key="legend" wrapperStyle={{ paddingTop: '10px' }} />
-                <Area key="income-area" type="monotone" dataKey="income" stroke="#10b981" fill="url(#incomeGrad)" strokeWidth={3} name="Thu nhập" />
-                <Area key="expense-area" type="monotone" dataKey="expense" stroke="#ef4444" fill="url(#expenseGrad)" strokeWidth={3} name="Chi tiêu" />
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Area key="income-area" type="monotone" dataKey="income" stroke="#10b981" fill="url(#incomeGrad)" strokeWidth={3} name="Thu nhập" dot={false} />
+                <Area key="expense-area" type="monotone" dataKey="expense" stroke="#ef4444" fill="url(#expenseGrad)" strokeWidth={3} name="Chi tiêu" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
