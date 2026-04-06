@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useStore } from '../../lib/store';
 import { apiRequest } from '../../lib/supabase';
+import { formatCurrency } from '../../lib/currency';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -164,8 +165,9 @@ export function BillSplit() {
 
   const splitBill = useMutation({
     mutationFn: (billId: string) => apiRequest(`/bills/${billId}/split`, { method: 'POST' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bill', selectedBillId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['bill', selectedBillId] });
+      await queryClient.refetchQueries({ queryKey: ['bill', selectedBillId] });
       toast.success('Chia bill thành công!');
       setCurrentStep('track');
     },

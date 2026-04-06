@@ -10,7 +10,7 @@ const app = new Hono();
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-User-Token'],
 }));
 app.use('*', logger(console.log));
 
@@ -113,22 +113,18 @@ app.get('/make-server-f5f5b39c/debug/env', async (c) => {
 });
 
 app.get('/make-server-f5f5b39c/debug/token', async (c) => {
-  const authHeader = c.req.header('Authorization');
+  // CRITICAL FIX: Read user token from X-User-Token header
+  const userToken = c.req.header('X-User-Token');
   
-  if (!authHeader) {
-    return c.json({ error: 'No Authorization header' }, 401);
+  if (!userToken) {
+    return c.json({ error: 'No X-User-Token header' }, 401);
   }
   
-  const token = authHeader.split(' ')[1];
-  if (!token) {
-    return c.json({ error: 'No token in Authorization header' }, 401);
-  }
-  
-  console.log(`[DEBUG] Token length: ${token.length}, prefix: ${token.substring(0, 30)}...`);
+  console.log(`[DEBUG] Token length: ${userToken.length}, prefix: ${userToken.substring(0, 30)}...`);
   
   const userClient = getUserClient();
   
-  const { data: { user }, error } = await userClient.auth.getUser(token);
+  const { data: { user }, error } = await userClient.auth.getUser(userToken);
   
   if (error) {
     console.error(`[DEBUG] Token validation FAILED:`, error);
@@ -138,8 +134,8 @@ app.get('/make-server-f5f5b39c/debug/token', async (c) => {
         errorMessage: error.message,
         errorStatus: error.status,
         errorName: error.name,
-        tokenLength: token.length,
-        tokenPrefix: token.substring(0, 30) + '...',
+        tokenLength: userToken.length,
+        tokenPrefix: userToken.substring(0, 30) + '...',
         anonKeySource: Deno.env.get('SUPABASE_ANON_KEY') ? 'ENV' : 'HARDCODED',
       }
     }, 401);
@@ -153,7 +149,7 @@ app.get('/make-server-f5f5b39c/debug/token', async (c) => {
     success: true,
     userId: user.id,
     userEmail: user.email,
-    tokenPrefix: token.substring(0, 30) + '...',
+    tokenPrefix: userToken.substring(0, 30) + '...',
     anonKeySource: Deno.env.get('SUPABASE_ANON_KEY') ? 'ENV' : 'HARDCODED',
   });
 });
@@ -207,8 +203,8 @@ app.post('/make-server-f5f5b39c/accounts', async (c) => {
 });
 
 app.put('/make-server-f5f5b39c/accounts/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -229,8 +225,8 @@ app.put('/make-server-f5f5b39c/accounts/:id', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/accounts/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -243,8 +239,8 @@ app.delete('/make-server-f5f5b39c/accounts/:id', async (c) => {
 });
 
 app.get('/make-server-f5f5b39c/accounts/balance', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const accounts = await kv.getByPrefix(`account:${userId}:`);
@@ -258,8 +254,8 @@ app.get('/make-server-f5f5b39c/accounts/balance', async (c) => {
 
 // ========== CATEGORIES ROUTES ==========
 app.get('/make-server-f5f5b39c/categories', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const categories = await kv.getByPrefix(`category:${userId}:`);
@@ -271,8 +267,8 @@ app.get('/make-server-f5f5b39c/categories', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/categories', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -304,8 +300,8 @@ app.post('/make-server-f5f5b39c/categories', async (c) => {
 
 // ========== TRANSACTIONS ROUTES ==========
 app.get('/make-server-f5f5b39c/transactions', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const from = c.req.query('from');
@@ -336,8 +332,8 @@ app.get('/make-server-f5f5b39c/transactions', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/transactions', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -383,8 +379,8 @@ app.post('/make-server-f5f5b39c/transactions', async (c) => {
 });
 
 app.get('/make-server-f5f5b39c/transactions/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -402,8 +398,8 @@ app.get('/make-server-f5f5b39c/transactions/:id', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/transactions/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -430,8 +426,8 @@ app.delete('/make-server-f5f5b39c/transactions/:id', async (c) => {
 
 // ========== DASHBOARD ROUTES ==========
 app.get('/make-server-f5f5b39c/dashboard/summary', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const month = c.req.query('month') || new Date().toISOString().slice(0, 7);
@@ -493,8 +489,8 @@ app.get('/make-server-f5f5b39c/dashboard/summary', async (c) => {
 
 // ========== TIMELINE ROUTES ==========
 app.get('/make-server-f5f5b39c/timeline', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const period = c.req.query('period') || 'month';
@@ -571,8 +567,8 @@ app.get('/make-server-f5f5b39c/timeline', async (c) => {
 
 // ========== BUDGETS ROUTES ==========
 app.get('/make-server-f5f5b39c/budgets', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const month = c.req.query('month') || new Date().toISOString().slice(0, 7);
@@ -602,8 +598,8 @@ app.get('/make-server-f5f5b39c/budgets', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/budgets', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -632,8 +628,8 @@ app.post('/make-server-f5f5b39c/budgets', async (c) => {
 });
 
 app.put('/make-server-f5f5b39c/budgets/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -656,8 +652,8 @@ app.put('/make-server-f5f5b39c/budgets/:id', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/budgets/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -678,8 +674,8 @@ app.delete('/make-server-f5f5b39c/budgets/:id', async (c) => {
 
 // ========== SAVINGS GOALS ROUTES ==========
 app.get('/make-server-f5f5b39c/goals', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const goals = await kv.getByPrefix(`goal:${userId}:`);
@@ -697,8 +693,8 @@ app.get('/make-server-f5f5b39c/goals', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/goals', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -728,8 +724,8 @@ app.post('/make-server-f5f5b39c/goals', async (c) => {
 });
 
 app.put('/make-server-f5f5b39c/goals/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -747,8 +743,8 @@ app.put('/make-server-f5f5b39c/goals/:id', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/goals/:id/allocate', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -770,8 +766,8 @@ app.post('/make-server-f5f5b39c/goals/:id/allocate', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/goals/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -787,8 +783,8 @@ app.delete('/make-server-f5f5b39c/goals/:id', async (c) => {
 
 // ========== REMINDERS ROUTES ==========
 app.get('/make-server-f5f5b39c/reminders', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const reminders = await kv.getByPrefix(`reminder:${userId}:`);
@@ -800,8 +796,8 @@ app.get('/make-server-f5f5b39c/reminders', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/reminders', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -832,8 +828,8 @@ app.post('/make-server-f5f5b39c/reminders', async (c) => {
 });
 
 app.put('/make-server-f5f5b39c/reminders/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -851,8 +847,8 @@ app.put('/make-server-f5f5b39c/reminders/:id', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/reminders/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const id = c.req.param('id');
@@ -868,8 +864,8 @@ app.delete('/make-server-f5f5b39c/reminders/:id', async (c) => {
 
 // ========== INCOME REMINDER CHECK ==========
 app.get('/make-server-f5f5b39c/reminders/income-check', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -925,8 +921,8 @@ app.get('/make-server-f5f5b39c/reminders/income-check', async (c) => {
 
 // ========== FAMILY ROUTES ==========
 app.get('/make-server-f5f5b39c/family/group', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const groups = await kv.getByPrefix(`family_group:`);
@@ -939,8 +935,8 @@ app.get('/make-server-f5f5b39c/family/group', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/family/groups', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -958,8 +954,8 @@ app.post('/make-server-f5f5b39c/family/groups', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/family/invite', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -978,8 +974,8 @@ app.post('/make-server-f5f5b39c/family/invite', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/family/leave', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const groups = await kv.getByPrefix(`family_group:`);
@@ -998,8 +994,8 @@ app.post('/make-server-f5f5b39c/family/leave', async (c) => {
 
 // ========== EXPORT ROUTES ==========
 app.get('/make-server-f5f5b39c/export/excel', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const type = c.req.query('type') || 'transactions';
@@ -1039,8 +1035,8 @@ app.get('/make-server-f5f5b39c/export/excel', async (c) => {
 
 // Pre-compute financial insights (NO AI needed)
 app.get('/make-server-f5f5b39c/ai/precompute', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const month = c.req.query('month') || new Date().toISOString().slice(0, 7);
@@ -1137,8 +1133,8 @@ app.get('/make-server-f5f5b39c/ai/precompute', async (c) => {
 
 // AI Chat with Router + Cache
 app.post('/make-server-f5f5b39c/chat', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -1221,8 +1217,8 @@ app.post('/make-server-f5f5b39c/chat', async (c) => {
 
 // Real OCR via AI Vision API
 app.post('/make-server-f5f5b39c/ocr/scan', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
 
   try {
     const body = await c.req.json();
@@ -1268,8 +1264,8 @@ app.get('/make-server-f5f5b39c/health', (c) => {
 // ========== BILL SPLITTING ROUTES ==========
 
 app.get('/make-server-f5f5b39c/bills', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
   try {
     const bills = await kv.getByPrefix(`bill:${userId}:`);
     const sorted = bills.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -1281,8 +1277,8 @@ app.get('/make-server-f5f5b39c/bills', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/bills', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
   try {
     const body = await c.req.json();
     const { name, date } = body;
@@ -1302,8 +1298,8 @@ app.post('/make-server-f5f5b39c/bills', async (c) => {
 });
 
 app.get('/make-server-f5f5b39c/bills/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
@@ -1316,8 +1312,8 @@ app.get('/make-server-f5f5b39c/bills/:id', async (c) => {
 });
 
 app.put('/make-server-f5f5b39c/bills/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
@@ -1334,8 +1330,8 @@ app.put('/make-server-f5f5b39c/bills/:id', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/bills/:id', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ message: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     await kv.del(`bill:${userId}:${id}`);
@@ -1603,68 +1599,38 @@ app.post('/make-server-f5f5b39c/bills/:id/complete', async (c) => {
 async function getUserId(c: any): Promise<{ userId: string | null; error?: string }> {
   console.log(`[AUTH DEBUG] ======= getUserId Called =======`);
   try {
-    const authHeader = c.req.header('Authorization');
-    console.log(`[AUTH DEBUG] Authorization header present: ${!!authHeader}`);
+    // CRITICAL FIX: Read user token from X-User-Token header instead of Authorization
+    // Authorization header must contain ANON_KEY for Supabase gateway validation
+    const userToken = c.req.header('X-User-Token');
+    console.log(`[AUTH DEBUG] X-User-Token header present: ${!!userToken}`);
     
-    if (!authHeader) {
-      console.log(`[AUTH DEBUG] No Authorization header`);
-      return { userId: null, error: 'No Authorization header' };
+    if (!userToken) {
+      console.log(`[AUTH DEBUG] No X-User-Token header`);
+      return { userId: null, error: 'No X-User-Token header' };
     }
     
-    const accessToken = authHeader.split(' ')[1];
-    if (!accessToken) {
-      console.log(`[AUTH DEBUG] No token in Authorization header`);
-      return { userId: null, error: 'No token in Authorization header' };
+    console.log(`[AUTH DEBUG] Token length: ${userToken.length}, starts with: ${userToken.substring(0, 10)}...`);
+    
+    // Use getUserClient helper for consistency
+    const userClient = getUserClient();
+    
+    const { data: { user }, error } = await userClient.auth.getUser(userToken);
+    
+    console.log(`[AUTH DEBUG] Calling userClient.auth.getUser()...`);
+    
+    if (error) {
+      console.error(`[AUTH DEBUG] ❌ getUser error: ${error.message}, status: ${error.status}, name: ${error.name}`);
+      console.error(`[AUTH DEBUG] Full error:`, JSON.stringify(error, null, 2));
+      return { userId: null, error: `Invalid JWT: ${error.message}` };
     }
     
-    console.log(`[AUTH DEBUG] Token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 10)}...`);
-    
-    // Use SERVICE_ROLE_KEY to get user info from token (SERVER-SIDE ONLY)
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
-    
-    // Verify token by calling Supabase with auth header
-    const { data: { user }, error } = await adminClient.auth.admin.getUserById('');
-    
-    // Alternative: Decode JWT without verification (only header + payload, no sig check)
-    // This is safe because we only use sub (user ID), not sensitive claims
-    const parts = accessToken.split('.');
-    if (parts.length !== 3) {
-      console.log(`[AUTH DEBUG] Invalid token format`);
-      return { userId: null, error: 'Invalid token format' };
+    if (!user) {
+      console.log(`[AUTH DEBUG] No user found for token`);
+      return { userId: null, error: 'No user found for token' };
     }
     
-    try {
-      const payload = JSON.parse(atob(parts[1]));
-      console.log(`[AUTH DEBUG] Token payload:`, JSON.stringify({ iss: payload.iss, sub: payload.sub, exp: payload.exp }));
-      
-      // Check expiration
-      const now = Math.floor(Date.now() / 1000);
-      if (payload.exp && payload.exp < now) {
-        console.log(`[AUTH DEBUG] Token expired`);
-        return { userId: null, error: 'Token expired' };
-      }
-      
-      // Check issuer is Supabase
-      if (payload.iss !== 'https://mhzssoishpipiypwuupx.supabase.co') {
-        console.log(`[AUTH DEBUG] Invalid token issuer`);
-        return { userId: null, error: 'Invalid token issuer' };
-      }
-      
-      const userId = payload.sub;
-      if (!userId) {
-        console.log(`[AUTH DEBUG] No user ID in token`);
-        return { userId: null, error: 'No user ID in token' };
-      }
-      
-      console.log(`[AUTH DEBUG] ✅ User authenticated: ${userId}`);
-      return { userId };
-    } catch (decodeError) {
-      console.error(`[AUTH DEBUG] Failed to decode token:`, decodeError);
-      return { userId: null, error: `Token decode failed: ${decodeError}` };
-    }
+    console.log(`[AUTH DEBUG] ✅ User authenticated: ${user.id}`);
+    return { userId: user.id };
   } catch (error) {
     console.error(`[AUTH DEBUG] ❌ Exception in getUserId:`, error);
     return { userId: null, error: `Auth exception: ${error}` };

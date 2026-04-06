@@ -1,7 +1,9 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { transactionsApi, categoriesApi, accountsApi } from '../../lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { useStore } from '../../lib/store';
+import { formatCurrency, formatShortCurrency } from '../../lib/currency';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -12,7 +14,6 @@ import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, ArrowUpCircle, ArrowDownCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useStore } from '../../lib/store';
 
 export function Transactions() {
   const queryClient = useQueryClient();
@@ -94,13 +95,6 @@ export function Transactions() {
     if (confirm('Bạn có chắc chắn muốn xóa giao dịch này?')) {
       deleteMutation.mutate(id);
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
   };
 
   const transactions = transactionsData?.data || [];

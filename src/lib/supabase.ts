@@ -117,7 +117,8 @@ export async function debugTokenStatus() {
       try {
         const backendTest = await fetch(`${API_BASE}/debug/token`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${publicAnonKey}`, // Gateway auth
+            'X-User-Token': session.access_token, // User auth
           },
         });
         const backendData = await backendTest.json();
@@ -178,7 +179,8 @@ if (typeof window !== 'undefined') {
       
       const response = await fetch(`${API_BASE}/debug/token`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${publicAnonKey}`, // Gateway auth
+          'X-User-Token': session.access_token, // User auth
         },
       });
       const data = await response.json();
@@ -265,18 +267,26 @@ export async function apiRequest(
   }
 
   const isAuthEndpoint = endpoint.startsWith('/auth/');
-  const authToken = (token && !isAuthEndpoint) ? token : publicAnonKey;
+  
+  // CRITICAL FIX: Always use publicAnonKey for Authorization header (Supabase gateway requirement)
+  // Pass user token via X-User-Token custom header for backend authentication
+  console.log(`[API] Request ${endpoint}, using ANON_KEY for gateway, user token in X-User-Token, retry: ${retryCount}`);
 
-  const tokenPrefix = authToken.substring(0, 30) + '...';
-  console.log(`[API] Request ${endpoint}, using ${token && !isAuthEndpoint ? 'access_token' : 'anon_key'}, retry: ${retryCount}, token prefix: ${tokenPrefix}`);
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${publicAnonKey}`, // Gateway authentication
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  // For protected endpoints, pass user token via custom header
+  if (token && !isAuthEndpoint) {
+    headers['X-User-Token'] = token;
+    console.log(`[API] Added X-User-Token header, prefix: ${token.substring(0, 30)}...`);
+  }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`,
-      ...(options.headers as Record<string, string> || {}),
-    },
+    headers,
   });
 
   if (!response.ok) {

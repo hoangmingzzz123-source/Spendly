@@ -184,38 +184,42 @@ export const getSampleDataSummary = () => {
 
 // Demo Mode: Sample data functions
 export const getSampleAccounts = () => {
-  return [
-    {
-      id: 'acc-1',
-      name: 'Tiền mặt',
-      type: 'CASH',
-      balance: 5000000,
-      color: '#10B981',
-      icon: '💵',
-      isDefault: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'acc-2',
-      name: 'Techcombank',
-      type: 'BANK',
-      balance: 15000000,
-      color: '#3B82F6',
-      icon: '🏦',
-      isDefault: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'acc-3',
-      name: 'Ví Momo',
-      type: 'EWALLET',
-      balance: 2500000,
-      color: '#EC4899',
-      icon: '📱',
-      isDefault: false,
-      createdAt: new Date().toISOString(),
-    },
-  ];
+  return {
+    data: [
+      {
+        id: 'acc-1',
+        name: 'Tiền mặt',
+        type: 'CASH',
+        balance: 5000000,
+        color: '#10B981',
+        icon: '💵',
+        isDefault: true,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'acc-2',
+        name: 'Techcombank',
+        type: 'BANK',
+        balance: 15000000,
+        color: '#3B82F6',
+        bankCode: 'tcb',
+        icon: '🏦',
+        isDefault: false,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'acc-3',
+        name: 'Ví Momo',
+        type: 'EWALLET',
+        balance: 2500000,
+        color: '#EC4899',
+        bankCode: 'momo',
+        icon: '📱',
+        isDefault: false,
+        createdAt: new Date().toISOString(),
+      },
+    ]
+  };
 };
 
 export const getSampleCategories = () => {
@@ -239,15 +243,15 @@ export const getSampleCategories = () => {
     createdAt: new Date().toISOString(),
   }));
 
-  return [...expenseCategories, ...incomeCategories];
+  return { data: [...expenseCategories, ...incomeCategories] };
 };
 
 export const getSampleTransactions = () => {
   const now = new Date();
-  const categories = getSampleCategories();
-  const accounts = getSampleAccounts();
+  const categories = getSampleCategories().data;
+  const accounts = getSampleAccounts().data;
 
-  return [
+  const transactions = [
     {
       id: 'txn-1',
       type: 'EXPENSE',
@@ -279,13 +283,15 @@ export const getSampleTransactions = () => {
       createdAt: new Date().toISOString(),
     },
   ];
+
+  return { data: transactions };
 };
 
 export const getSampleBudgets = () => {
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const categories = getSampleCategories();
+  const categories = getSampleCategories().data;
 
-  return SAMPLE_BUDGET_TEMPLATES.map((template, idx) => {
+  const budgets = SAMPLE_BUDGET_TEMPLATES.map((template, idx) => {
     const category = categories.find(c => c.name === template.name);
     return {
       id: `budget-${idx}`,
@@ -299,10 +305,12 @@ export const getSampleBudgets = () => {
       createdAt: new Date().toISOString(),
     };
   });
+
+  return { data: budgets };
 };
 
 export const getSampleGoals = () => {
-  return SAMPLE_GOALS.map((goal, idx) => ({
+  const goals = SAMPLE_GOALS.map((goal, idx) => ({
     id: `goal-${idx}`,
     name: goal.name,
     targetAmount: goal.targetAmount,
@@ -313,10 +321,12 @@ export const getSampleGoals = () => {
     status: 'IN_PROGRESS' as const,
     createdAt: new Date().toISOString(),
   }));
+
+  return { data: goals };
 };
 
 export const getSampleReminders = () => {
-  return SAMPLE_REMINDERS.map((reminder, idx) => ({
+  const reminders = SAMPLE_REMINDERS.map((reminder, idx) => ({
     id: `reminder-${idx}`,
     title: reminder.title,
     type: reminder.type,
@@ -327,27 +337,35 @@ export const getSampleReminders = () => {
     isActive: true,
     createdAt: new Date().toISOString(),
   }));
+
+  return { data: reminders };
 };
 
 export const getSampleDashboardData = (month: string) => {
-  const budgets = getSampleBudgets();
+  const budgets = getSampleBudgets().data;
   const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
   const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
 
   return {
-    totalIncome: 45000000,
-    totalExpense: totalSpent,
-    balance: 45000000 - totalSpent,
-    budgetUsage: (totalSpent / totalBudget) * 100,
-    topCategories: [
-      { name: 'Ăn uống', amount: 4500000, color: '#EF4444' },
-      { name: 'Di chuyển', amount: 1800000, color: '#F59E0B' },
-      { name: 'Mua sắm', amount: 2200000, color: '#EC4899' },
-    ],
-    recentTransactions: getSampleTransactions().slice(0, 5),
-    monthlyComparison: {
-      income: { current: 45000000, previous: 42000000, change: 7.1 },
-      expense: { current: totalSpent, previous: 18000000, change: 25.0 },
-    },
+    data: {
+      month,
+      income: 45000000,
+      expense: totalSpent,
+      balance: 45000000 - totalSpent,
+      totalBalance: 22500000,
+      budgetUsage: (totalSpent / totalBudget) * 100,
+      topCategories: [
+        { categoryId: 'cat-exp-0', categoryName: 'Ăn uống', amount: 4500000, color: '#EF4444', icon: '🍜', count: 15 },
+        { categoryId: 'cat-exp-1', categoryName: 'Di chuyển', amount: 1800000, color: '#F59E0B', icon: '🚗', count: 8 },
+        { categoryId: 'cat-exp-2', categoryName: 'Mua sắm', amount: 2200000, color: '#EC4899', icon: '🛍️', count: 6 },
+        { categoryId: 'cat-exp-3', categoryName: 'Giải trí', amount: 1500000, color: '#8B5CF6', icon: '🎮', count: 5 },
+        { categoryId: 'cat-exp-4', categoryName: 'Hóa đơn & Tiện ích', amount: 2800000, color: '#06B6D4', icon: '💡', count: 4 },
+      ],
+      transactionCount: 38,
+      monthlyComparison: {
+        income: { current: 45000000, previous: 42000000, change: 7.1 },
+        expense: { current: totalSpent, previous: 18000000, change: 25.0 },
+      },
+    }
   };
 };

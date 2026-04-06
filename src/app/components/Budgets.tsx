@@ -105,13 +105,19 @@ export function Budgets() {
       return;
     }
 
+    const budgetData = {
+      categoryId: formData.categoryId,
+      amount: formData.amount,
+      month: currentMonth, // Add month field required by backend
+    };
+
     if (editingBudget) {
       updateMutation.mutate({
         id: editingBudget.id,
-        data: formData,
+        data: budgetData,
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(budgetData);
     }
   };
 

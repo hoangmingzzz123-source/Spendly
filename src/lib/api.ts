@@ -43,7 +43,7 @@ export const accountsApi = {
   }),
   getBalance: () => handleDemoMode(
     () => apiRequest('/accounts/balance'),
-    { totalIncome: 45000000, totalExpense: 22500000, balance: 22500000 }
+    { data: { totalBalance: 22500000, accounts: getSampleAccounts().data } }
   ),
 };
 
