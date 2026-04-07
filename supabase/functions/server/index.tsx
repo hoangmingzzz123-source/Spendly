@@ -1343,8 +1343,8 @@ app.delete('/make-server-f5f5b39c/bills/:id', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/bills/:id/participants', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
@@ -1363,8 +1363,8 @@ app.post('/make-server-f5f5b39c/bills/:id/participants', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/bills/:id/participants/:pid', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const pid = c.req.param('pid');
@@ -1384,8 +1384,8 @@ app.delete('/make-server-f5f5b39c/bills/:id/participants/:pid', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/bills/:id/items', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
@@ -1405,8 +1405,8 @@ app.post('/make-server-f5f5b39c/bills/:id/items', async (c) => {
 });
 
 app.put('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const billId = c.req.param('billId');
     const itemId = c.req.param('itemId');
@@ -1429,8 +1429,8 @@ app.put('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
 });
 
 app.delete('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const billId = c.req.param('billId');
     const itemId = c.req.param('itemId');
@@ -1449,8 +1449,8 @@ app.delete('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/bills/:billId/items/:itemId/shares', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const billId = c.req.param('billId');
     const itemId = c.req.param('itemId');
@@ -1471,8 +1471,8 @@ app.post('/make-server-f5f5b39c/bills/:billId/items/:itemId/shares', async (c) =
 });
 
 app.post('/make-server-f5f5b39c/bills/:id/payments', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
@@ -1490,8 +1490,8 @@ app.post('/make-server-f5f5b39c/bills/:id/payments', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/bills/:id/split', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
@@ -1543,8 +1543,8 @@ app.post('/make-server-f5f5b39c/bills/:id/split', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/bills/:id/transactions', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
@@ -1578,8 +1578,8 @@ app.post('/make-server-f5f5b39c/bills/:id/transactions', async (c) => {
 });
 
 app.post('/make-server-f5f5b39c/bills/:id/complete', async (c) => {
-  const userId = await getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  const { userId, error } = await getUserId(c);
+  if (!userId) return c.json({ error: error || 'Unauthorized' }, 401);
   try {
     const id = c.req.param('id');
     const bill = await kv.get(`bill:${userId}:${id}`);
