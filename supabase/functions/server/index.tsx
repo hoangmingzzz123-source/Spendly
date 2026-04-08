@@ -1394,7 +1394,7 @@ app.post('/make-server-f5f5b39c/bills/:id/items', async (c) => {
     const { name, price } = await c.req.json();
     if (!name || price === undefined) return c.json({ error: 'Name and price required' }, 400);
     bill.items.push({ id: crypto.randomUUID(), name, price: parseFloat(price), shares: [] });
-    bill.totalAmount = bill.items.reduce((s: number, i: any) => s + i.price, 0);
+    bill.totalAmount = calculateTotalAmount(bill.items);
     bill.updatedAt = new Date().toISOString();
     await kv.set(`bill:${userId}:${id}`, bill);
     return c.json({ data: bill });
@@ -1418,7 +1418,7 @@ app.put('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
     if (idx === -1) return c.json({ error: 'Item not found' }, 404);
     bill.items[idx] = { ...bill.items[idx], ...body };
     if (body.price !== undefined) bill.items[idx].price = parseFloat(body.price);
-    bill.totalAmount = bill.items.reduce((s: number, i: any) => s + i.price, 0);
+    bill.totalAmount = calculateTotalAmount(bill.items);
     bill.updatedAt = new Date().toISOString();
     await kv.set(`bill:${userId}:${billId}`, bill);
     return c.json({ data: bill });
@@ -1438,7 +1438,7 @@ app.delete('/make-server-f5f5b39c/bills/:billId/items/:itemId', async (c) => {
     if (!bill) return c.json({ error: 'Bill not found' }, 404);
     if (bill.status === 'COMPLETED') return c.json({ error: 'Cannot edit completed bill' }, 400);
     bill.items = bill.items.filter((i: any) => i.id !== itemId);
-    bill.totalAmount = bill.items.reduce((s: number, i: any) => s + i.price, 0);
+    bill.totalAmount = calculateTotalAmount(bill.items);
     bill.updatedAt = new Date().toISOString();
     await kv.set(`bill:${userId}:${billId}`, bill);
     return c.json({ data: bill });
@@ -1461,6 +1461,7 @@ app.post('/make-server-f5f5b39c/bills/:billId/items/:itemId/shares', async (c) =
     const idx = bill.items.findIndex((i: any) => i.id === itemId);
     if (idx === -1) return c.json({ error: 'Item not found' }, 404);
     bill.items[idx].shares = participantIds || [];
+    bill.totalAmount = calculateTotalAmount(bill.items);
     bill.updatedAt = new Date().toISOString();
     await kv.set(`bill:${userId}:${billId}`, bill);
     return c.json({ data: bill });
@@ -1502,8 +1503,9 @@ app.post('/make-server-f5f5b39c/bills/:id/split', async (c) => {
     bill.items.forEach((item: any) => {
       const shares = item.shares || [];
       if (shares.length === 0) return;
-      const perPerson = item.price / shares.length;
-      shares.forEach((pid: string) => { owes[pid] = (owes[pid] || 0) + perPerson; });
+      // Each person who shares pays the FULL price (not divided)
+      // This means if 2 people share a 50k item, total is 100k (50k each)
+      shares.forEach((pid: string) => { owes[pid] = (owes[pid] || 0) + item.price; });
     });
 
     const balances: Record<string, number> = {};
@@ -1596,6 +1598,15 @@ app.post('/make-server-f5f5b39c/bills/:id/complete', async (c) => {
 });
 
 // ========== HELPER FUNCTIONS ==========
+// Calculate total amount based on items and their shares
+// Each person who shares an item pays the full price (i.e., each person orders their own portion)
+function calculateTotalAmount(items: any[]): number {
+  return items.reduce((sum: number, item: any) => {
+    const numShares = item.shares?.length || 0;
+    return sum + (item.price * numShares);
+  }, 0);
+}
+
 async function getUserId(c: any): Promise<{ userId: string | null; error?: string }> {
   console.log(`[AUTH DEBUG] ======= getUserId Called =======`);
   try {

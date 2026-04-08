@@ -57,7 +57,7 @@ interface Bill {
 type Step = 'participants' | 'items' | 'shares' | 'payer' | 'split' | 'track';
 
 export function BillSplit() {
-  const { accessToken } = useStore();
+  const { accessToken, user } = useStore();
   const queryClient = useQueryClient();
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -93,12 +93,26 @@ export function BillSplit() {
   // Mutations
   const createBill = useMutation({
     mutationFn: (data: { name: string; date: string }) => apiRequest('/bills', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       queryClient.invalidateQueries({ queryKey: ['bills'] });
       setSelectedBillId(res.data.id);
       setShowCreateDialog(false);
       setNewBillName('');
       setCurrentStep('participants');
+      
+      // Auto-add current user as first participant
+      if (user?.name) {
+        try {
+          await apiRequest(`/bills/${res.data.id}/participants`, { 
+            method: 'POST', 
+            body: JSON.stringify({ name: user.name }) 
+          });
+          queryClient.invalidateQueries({ queryKey: ['bill', res.data.id] });
+        } catch (error) {
+          console.error('Failed to add user as participant:', error);
+        }
+      }
+      
       toast.success('Tạo bill thành công!');
     },
     onError: (e: any) => toast.error(e.message),
@@ -607,7 +621,8 @@ export function BillSplit() {
                     {bill.participants.map(p => {
                       const total = bill.items.reduce((sum, item) => {
                         if ((item.shares || []).includes(p.id)) {
-                          return sum + item.price / (item.shares.length || 1);
+                          // Each person pays the FULL price of the item (not divided)
+                          return sum + item.price;
                         }
                         return sum;
                       }, 0);
@@ -803,22 +818,42 @@ export function BillSplit() {
                           {remaining > 0 && <span className="text-red-500">Còn nợ: {fmt(remaining)}đ</span>}
                         </div>
                         {remaining > 0 && !isCompleted && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full mt-2 text-xs"
-                            onClick={() => {
-                              setPaymentTarget({
-                                fromId: s.fromParticipantId,
-                                toId: s.toParticipantId,
-                                maxAmount: remaining,
-                              });
-                              setPaymentAmount(remaining.toString());
-                              setShowPaymentDialog(true);
-                            }}
-                          >
-                            <CreditCard className="w-3.5 h-3.5 mr-1" /> Ghi nhận thanh toán
-                          </Button>
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-xs"
+                              onClick={() => {
+                                setPaymentTarget({
+                                  fromId: s.fromParticipantId,
+                                  toId: s.toParticipantId,
+                                  maxAmount: remaining,
+                                });
+                                setPaymentAmount(remaining.toString());
+                                setShowPaymentDialog(true);
+                              }}
+                            >
+                              <CreditCard className="w-3.5 h-3.5 mr-1" /> Ghi nhận thanh toán
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
+                              onClick={() => {
+                                if (confirm(`Xác nhận ${participantName(s.fromParticipantId)} đã trả đủ ${fmt(remaining)}đ cho ${participantName(s.toParticipantId)}?`)) {
+                                  addTransaction.mutate({
+                                    billId: bill.id,
+                                    fromParticipantId: s.fromParticipantId,
+                                    toParticipantId: s.toParticipantId,
+                                    amount: remaining,
+                                    note: 'Thanh toán đủ',
+                                  });
+                                }
+                              }}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Đã trả đủ
+                            </Button>
+                          </div>
                         )}
                       </div>
                     );
